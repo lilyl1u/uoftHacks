@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { washroomService, reviewService } from '../services/api';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { Icon } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { washroomService } from '../services/api';
 import RatingModal from '../components/RatingModal';
 import AddWashroomModal from '../components/AddWashroomModal';
 import './MapPage.css';
@@ -23,6 +26,16 @@ const MapPage = () => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Fix for default marker icon in react-leaflet
+  const customIcon = new Icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
 
   useEffect(() => {
     loadWashrooms();
@@ -69,11 +82,47 @@ const MapPage = () => {
       </div>
 
       <div className="map-content">
-        <div className="map-placeholder">
-          <p>🗺️ Map integration coming soon!</p>
-          <p className="map-note">
-            You can integrate Google Maps, Mapbox, or Leaflet here
-          </p>
+        <div className="map-wrapper">
+          <MapContainer 
+            center={[43.6629, -79.3957]} // UofT campus coordinates
+            zoom={15} 
+            style={{ height: '500px', width: '100%' }}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+            {washrooms.map((washroom) => (
+              <Marker 
+                key={washroom.id} 
+                position={[washroom.latitude, washroom.longitude]}
+                icon={customIcon}
+              >
+                <Popup>
+                  <div className="popup-content">
+                    <h4>{washroom.name}</h4>
+                    {washroom.building && (
+                      <p>{washroom.building}
+                      {washroom.floor !== null && ` - Floor ${washroom.floor}`}</p>
+                    )}
+                    <div className="popup-rating">
+                      ⭐ {washroom.average_rating.toFixed(1)} ({washroom.total_reviews} reviews)
+                    </div>
+                    <div className="popup-tags">
+                      {washroom.accessibility && <span className="tag">♿ Accessible</span>}
+                      {washroom.paid_access && <span className="tag">💰 Paid</span>}
+                    </div>
+                    <button 
+                      onClick={() => handleWashroomClick(washroom)}
+                      className="popup-button"
+                    >
+                      Rate This Washroom
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
         </div>
 
         <div className="washrooms-list">

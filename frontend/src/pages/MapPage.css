@@ -35,6 +35,13 @@
   gap: 2rem;
 }
 
+.map-wrapper {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
 .map-placeholder {
   background: white;
   padding: 3rem;
@@ -141,6 +148,53 @@
 .tag.paid {
   background: #e74c3c;
   color: white;
+}
+
+.popup-content {
+  padding: 0.5rem;
+}
+
+.popup-content h4 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+}
+
+.popup-content p {
+  margin: 0.25rem 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.popup-rating {
+  margin: 0.5rem 0;
+  font-weight: 600;
+  color: #f39c12;
+}
+
+.popup-tags {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
+
+.popup-tags .tag {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+}
+
+.popup-button {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.popup-button:hover {
+  background: #5a6fd8;
 }
 
 .no-washrooms {
