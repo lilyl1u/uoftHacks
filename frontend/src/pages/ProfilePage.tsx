@@ -5,6 +5,7 @@ import { userService, reviewService, friendsService } from '../services/api';
 import FriendsList from '../components/FriendsList';
 import UserSearch from '../components/UserSearch';
 import ChampionBoard from '../components/ChampionBoard';
+import WashroomDetailsModal from '../components/WashroomDetailsModal';
 import './ProfilePage.css';
 
 interface UserProfile {
@@ -21,6 +22,7 @@ interface UserProfile {
     building: string;
     visit_count: number;
     last_visited: string;
+    overall_rating?: number | string | null;
   }>;
   isLimited?: boolean;
   isOwnProfile?: boolean;
@@ -29,10 +31,12 @@ interface UserProfile {
 
 interface Review {
   id: number;
-  rating: number;
-  comment: string;
   washroom_id: number;
+  overall_rating: number | string;
+  comment: string;
   created_at: string;
+  washroom_name?: string;
+  building?: string;
 }
 
 interface BadgeInfo {
@@ -110,9 +114,26 @@ const ProfilePage = () => {
   const [friendshipLoading, setFriendshipLoading] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [showUserSearch, setShowUserSearch] = useState(false);
+  const [selectedWashroomId, setSelectedWashroomId] = useState<number | null>(null);
+  const [showWashroomModal, setShowWashroomModal] = useState(false);
+  const [visitsToShow, setVisitsToShow] = useState(7);
 
   const viewingUserId = userId ? parseInt(userId) : user?.id;
   const isOwnProfile = !userId || viewingUserId === user?.id;
+
+  // Helper functions for rating
+  const getRating = (rating: any): number => {
+    if (rating == null || rating === '') return 0;
+    const num = typeof rating === 'string' ? parseFloat(rating) : Number(rating);
+    return isNaN(num) ? 0 : num;
+  };
+
+  const getRatingColor = (rating: number): string => {
+    if (rating >= 4.0) return '#2ECC71'; // Green
+    if (rating >= 2.5) return '#F39C12'; // Orange
+    if (rating > 0) return '#E74C3C'; // Red
+    return '#95a5a6'; // Gray
+  };
 
   useEffect(() => {
     if (user && viewingUserId) {
@@ -120,6 +141,8 @@ const ProfilePage = () => {
       if (!isOwnProfile) {
         loadFriendshipStatus();
       }
+      // Reset visits display when profile changes
+      setVisitsToShow(7);
     }
   }, [user, viewingUserId, isOwnProfile]);
 
@@ -136,7 +159,7 @@ const ProfilePage = () => {
         
         // Load user reviews only for full profiles
         const reviewsData = await reviewService.getUserReviews(viewingUserId);
-        setReviews(reviewsData || []);
+        setReviews(reviewsData?.reviews || []);
       } else {
         setReviews([]);
       }
@@ -231,8 +254,8 @@ const ProfilePage = () => {
       : null;
 
     const avgRating = reviews.length > 0
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-      : 0;
+      ? (reviews.reduce((sum, r) => sum + getRating(r.overall_rating), 0) / reviews.length).toFixed(1)
+      : '0.0';
 
     setWrappedData({
       favoriteWashroom,
@@ -395,7 +418,7 @@ const ProfilePage = () => {
               className="wrapped-text-button"
               title="View Your Year in Washrooms"
             >
-              Washroom Finder Wrapped
+              pooPals Wrapped
             </button>
           )}
         </div>
@@ -462,22 +485,53 @@ const ProfilePage = () => {
       <div className="recent-visits-section">
         <h2 className="recent-visits-header">Recent Visits</h2>
         {profile.washroom_visits && profile.washroom_visits.length > 0 ? (
-          <div className="visits-list">
-            {profile.washroom_visits.map((visit) => (
-              <div key={visit.id} className="visit-item">
-                <div>
-                  <h4>{visit.name}</h4>
-                  <p>{visit.building}</p>
+          <>
+            <div className="visits-list">
+              {profile.washroom_visits.slice(0, visitsToShow).map((visit) => (
+                <div 
+                  key={visit.id} 
+                  className="visit-item"
+                  onClick={() => {
+                    setSelectedWashroomId(visit.id);
+                    setShowWashroomModal(true);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div>
+                    <h4>{visit.name}</h4>
+                    <p>{visit.building}</p>
+                    {visit.overall_rating && (
+                      <div className="visit-rating">
+                        <span className="visit-rating-label">Your Rating:</span>
+                        <span 
+                          className="visit-rating-value"
+                          style={{ 
+                            color: getRatingColor(getRating(visit.overall_rating))
+                          }}
+                        >
+                          ⭐ {getRating(visit.overall_rating).toFixed(1)}/5.0
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="visit-stats">
+                    <span>Visited {visit.visit_count} time(s)</span>
+                    <span className="visit-date">
+                      {new Date(visit.last_visited).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
-                <div className="visit-stats">
-                  <span>Visited {visit.visit_count} time(s)</span>
-                  <span className="visit-date">
-                    {new Date(visit.last_visited).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            {profile.washroom_visits.length > visitsToShow && (
+              <button
+                className="load-more-visits-button"
+                onClick={() => setVisitsToShow(profile.washroom_visits!.length)}
+              >
+                Load More ({profile.washroom_visits.length - visitsToShow} more)
+              </button>
+            )}
+          </>
         ) : (
           <p className="no-visits">No washroom visits yet</p>
         )}
@@ -666,6 +720,18 @@ const ProfilePage = () => {
       <div style={{ marginTop: '2rem' }}>
         <ChampionBoard />
       </div>
+
+      {/* Washroom Details Modal */}
+      {selectedWashroomId && (
+        <WashroomDetailsModal
+          isOpen={showWashroomModal}
+          onClose={() => {
+            setShowWashroomModal(false);
+            setSelectedWashroomId(null);
+          }}
+          washroomId={selectedWashroomId}
+        />
+      )}
     </div>
   );
 };

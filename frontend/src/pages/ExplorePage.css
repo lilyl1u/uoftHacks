@@ -201,3 +201,162 @@
   line-height: 1.6;
   border-left: 3px solid #667eea;
 }
+
+.explore-review-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.explore-like-button,
+.explore-comment-button {
+  background: white;
+  border: 1px solid #e0e0e0;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.explore-like-button:hover,
+.explore-comment-button:hover {
+  background: #f0f0f0;
+  border-color: #667eea;
+}
+
+.explore-like-button.liked {
+  background: #ffe6e6;
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.explore-like-button:disabled,
+.explore-comment-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.explore-comments-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.explore-loading-comments {
+  text-align: center;
+  padding: 1rem;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.explore-comments-list {
+  margin-bottom: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.explore-comment-item {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border-left: 2px solid #667eea;
+}
+
+.explore-comment-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.explore-comment-avatar,
+.explore-comment-avatar-placeholder {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.explore-comment-avatar-placeholder {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.explore-comment-username {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #2c3e50;
+}
+
+.explore-comment-text {
+  margin: 0.5rem 0;
+  color: #555;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.explore-comment-time {
+  font-size: 0.75rem;
+  color: #95a5a6;
+}
+
+.explore-no-comments {
+  text-align: center;
+  padding: 1rem;
+  color: #95a5a6;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.explore-add-comment {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.explore-comment-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.explore-comment-input:focus {
+  border-color: #667eea;
+}
+
+.explore-comment-submit {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.explore-comment-submit:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.explore-comment-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

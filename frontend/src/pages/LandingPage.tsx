@@ -25,7 +25,7 @@ const LandingPage = () => {
       </button>
 
       <div className="landing-content">
-        <h1 className="landing-title">UofT WASHROOM FINDER</h1>
+        <h1 className="landing-title">pooPals</h1>
 
         <div className="bathroom-symbol">🚻</div>
 

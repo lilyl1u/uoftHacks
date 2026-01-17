@@ -52,16 +52,18 @@ export const getUserProfile = async (req: Request, res: Response) => {
       });
     }
 
-    // Get washroom visits (only for full profile)
+    // Get washroom visits (only for full profile) with user's rating
     const visitsResult = await pool.query(
       `SELECT 
         w.id, 
         w.name, 
         w.building,
         uwv.visit_count,
-        uwv.last_visited
+        uwv.last_visited,
+        r.overall_rating
       FROM user_washroom_visits uwv
       JOIN washrooms w ON uwv.washroom_id = w.id
+      LEFT JOIN reviews r ON r.user_id = $1 AND r.washroom_id = w.id
       WHERE uwv.user_id = $1
       ORDER BY uwv.last_visited DESC`,
       [profileUserId]

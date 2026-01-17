@@ -110,6 +110,10 @@ export const reviewService = {
     const response = await api.get('/reviews/friends');
     return response.data.reviews;
   },
+  getFriendsReviewsByWashroom: async (washroomId: number) => {
+    const response = await api.get(`/reviews/friends/washroom/${washroomId}`);
+    return response.data.reviews;
+  },
   update: async (reviewId: number, data: any) => {
     const response = await api.put(`/reviews/${reviewId}`, data);
     return response.data;
@@ -117,6 +121,44 @@ export const reviewService = {
   delete: async (reviewId: number) => {
     const response = await api.delete(`/reviews/${reviewId}`);
     return response.data;
+  },
+};
+
+export const commentService = {
+  create: async (reviewId: number, commentText: string) => {
+    const response = await api.post(`/comments/review/${reviewId}`, { comment_text: commentText });
+    return response.data.comment;
+  },
+  getByReview: async (reviewId: number) => {
+    const response = await api.get(`/comments/review/${reviewId}`);
+    return response.data.comments;
+  },
+  delete: async (commentId: number) => {
+    const response = await api.delete(`/comments/${commentId}`);
+    return response.data;
+  },
+};
+
+export const likeService = {
+  like: async (reviewId: number) => {
+    const response = await api.post(`/likes/review/${reviewId}`);
+    return response.data;
+  },
+  unlike: async (reviewId: number) => {
+    const response = await api.delete(`/likes/review/${reviewId}`);
+    return response.data;
+  },
+  getCount: async (reviewId: number) => {
+    const response = await api.get(`/likes/review/${reviewId}/count`);
+    return response.data.like_count;
+  },
+  checkIfLiked: async (reviewId: number) => {
+    const response = await api.get(`/likes/review/${reviewId}/check`);
+    return response.data.liked;
+  },
+  getLikes: async (reviewId: number) => {
+    const response = await api.get(`/likes/review/${reviewId}`);
+    return response.data.likes;
   },
 };
 

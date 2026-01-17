@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { reviewService, friendsService } from '../services/api';
+import { reviewService, friendsService, commentService, likeService } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import './ExplorePage.css';
 
 interface FriendReview {
@@ -18,10 +19,27 @@ interface FriendReview {
   avatar: string | null;
 }
 
+interface Comment {
+  id: number;
+  review_id: number;
+  comment_text: string;
+  created_at: string;
+  user_id: number;
+  username: string;
+  avatar: string | null;
+}
+
 const ExplorePage = () => {
+  const { user } = useAuth();
   const [reviews, setReviews] = useState<FriendReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasFriends, setHasFriends] = useState(true);
+  const [expandedReviews, setExpandedReviews] = useState<Set<number>>(new Set());
+  const [comments, setComments] = useState<Record<number, Comment[]>>({});
+  const [likes, setLikes] = useState<Record<number, { count: number; liked: boolean }>>({});
+  const [commentTexts, setCommentTexts] = useState<Record<number, string>>({});
+  const [loadingComments, setLoadingComments] = useState<Set<number>>(new Set());
+  const [loadingLikes, setLoadingLikes] = useState<Set<number>>(new Set());
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -48,6 +66,29 @@ const ExplorePage = () => {
       const reviewsData = await reviewService.getFriendsReviews();
       console.log('Friends reviews loaded:', reviewsData);
       setReviews(reviewsData || []);
+      
+      // Load like counts and status for all reviews
+      if (reviewsData && reviewsData.length > 0) {
+        const likesPromises = reviewsData.map(async (review) => {
+          try {
+            const [count, liked] = await Promise.all([
+              likeService.getCount(review.id),
+              likeService.checkIfLiked(review.id),
+            ]);
+            return { reviewId: review.id, count, liked };
+          } catch (error) {
+            console.error(`Failed to load likes for review ${review.id}:`, error);
+            return { reviewId: review.id, count: 0, liked: false };
+          }
+        });
+        
+        const likesData = await Promise.all(likesPromises);
+        const likesMap: Record<number, { count: number; liked: boolean }> = {};
+        likesData.forEach(({ reviewId, count, liked }) => {
+          likesMap[reviewId] = { count, liked };
+        });
+        setLikes(likesMap);
+      }
     } catch (error: any) {
       console.error('Failed to load friends reviews:', error);
       console.error('Error details:', error.response?.data || error.message);
@@ -58,6 +99,75 @@ const ExplorePage = () => {
       setReviews([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleReviewExpanded = async (reviewId: number) => {
+    const newExpanded = new Set(expandedReviews);
+    if (newExpanded.has(reviewId)) {
+      newExpanded.delete(reviewId);
+    } else {
+      newExpanded.add(reviewId);
+      // Load comments when expanding
+      if (!comments[reviewId]) {
+        setLoadingComments(new Set([...Array.from(loadingComments), reviewId]));
+        try {
+          const commentsData = await commentService.getByReview(reviewId);
+          setComments({ ...comments, [reviewId]: commentsData });
+        } catch (error) {
+          console.error(`Failed to load comments for review ${reviewId}:`, error);
+        } finally {
+          const newLoading = new Set(loadingComments);
+          newLoading.delete(reviewId);
+          setLoadingComments(newLoading);
+        }
+      }
+    }
+    setExpandedReviews(newExpanded);
+  };
+
+  const handleLike = async (reviewId: number) => {
+    if (loadingLikes.has(reviewId)) return;
+    
+    setLoadingLikes(new Set([...Array.from(loadingLikes), reviewId]));
+    try {
+      const currentLiked = likes[reviewId]?.liked || false;
+      const result = currentLiked
+        ? await likeService.unlike(reviewId)
+        : await likeService.like(reviewId);
+      
+      setLikes({
+        ...likes,
+        [reviewId]: { count: result.like_count, liked: result.liked },
+      });
+    } catch (error) {
+      console.error(`Failed to ${likes[reviewId]?.liked ? 'unlike' : 'like'} review:`, error);
+    } finally {
+      const newLoading = new Set(loadingLikes);
+      newLoading.delete(reviewId);
+      setLoadingLikes(newLoading);
+    }
+  };
+
+  const handleAddComment = async (reviewId: number) => {
+    const commentText = commentTexts[reviewId]?.trim();
+    if (!commentText) return;
+    
+    try {
+      const newComment = await commentService.create(reviewId, commentText);
+      // Ensure the comment has the expected structure
+      if (newComment && newComment.id) {
+        setComments({
+          ...comments,
+          [reviewId]: [...(comments[reviewId] || []), newComment],
+        });
+        setCommentTexts({ ...commentTexts, [reviewId]: '' });
+      } else {
+        console.error('Invalid comment response:', newComment);
+      }
+    } catch (error: any) {
+      console.error('Failed to add comment:', error);
+      alert(error.response?.data?.error || error.message || 'Failed to add comment. Please try again.');
     }
   };
 
@@ -170,6 +280,78 @@ const ExplorePage = () => {
 
                 {review.comment && (
                   <p className="explore-review-comment">"{review.comment}"</p>
+                )}
+
+                {/* Like and Comment Section */}
+                <div className="explore-review-actions">
+                  <button
+                    className={`explore-like-button ${likes[review.id]?.liked ? 'liked' : ''}`}
+                    onClick={() => handleLike(review.id)}
+                    disabled={loadingLikes.has(review.id)}
+                  >
+                    {likes[review.id]?.liked ? '❤️' : '🤍'} {likes[review.id]?.count || 0}
+                  </button>
+                  <button
+                    className="explore-comment-button"
+                    onClick={() => toggleReviewExpanded(review.id)}
+                  >
+                    💬 {comments[review.id]?.length || 0}
+                  </button>
+                </div>
+
+                {/* Comments Section */}
+                {expandedReviews.has(review.id) && (
+                  <div className="explore-comments-section">
+                    {loadingComments.has(review.id) ? (
+                      <div className="explore-loading-comments">Loading comments...</div>
+                    ) : (
+                      <>
+                        <div className="explore-comments-list">
+                          {comments[review.id] && comments[review.id].length > 0 ? (
+                            comments[review.id].map((comment) => (
+                              <div key={comment.id} className="explore-comment-item">
+                                <div className="explore-comment-user">
+                                  {comment.avatar ? (
+                                    <img src={comment.avatar} alt={comment.username} className="explore-comment-avatar" />
+                                  ) : (
+                                    <div className="explore-comment-avatar-placeholder">
+                                      {comment.username.charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <span className="explore-comment-username">{comment.username}</span>
+                                </div>
+                                <p className="explore-comment-text">{comment.comment_text}</p>
+                                <span className="explore-comment-time">{formatDate(comment.created_at)}</span>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="explore-no-comments">No comments yet. Be the first to comment!</p>
+                          )}
+                        </div>
+                        <div className="explore-add-comment">
+                          <input
+                            type="text"
+                            placeholder="Write a comment..."
+                            value={commentTexts[review.id] || ''}
+                            onChange={(e) => setCommentTexts({ ...commentTexts, [review.id]: e.target.value })}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                handleAddComment(review.id);
+                              }
+                            }}
+                            className="explore-comment-input"
+                          />
+                          <button
+                            onClick={() => handleAddComment(review.id)}
+                            className="explore-comment-submit"
+                            disabled={!commentTexts[review.id]?.trim()}
+                          >
+                            Post
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             ))}

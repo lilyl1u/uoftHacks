@@ -240,6 +240,47 @@ export const getFriendsReviews = async (req: Request, res: Response) => {
   }
 };
 
+export const getFriendsReviewsByWashroom = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { washroomId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Get reviews from friends for a specific washroom
+    const result = await pool.query(
+      `SELECT 
+        r.id,
+        r.washroom_id,
+        r.cleanliness_rating,
+        r.privacy_rating,
+        r.wait_time_rating,
+        r.accessibility_rating,
+        r.ease_of_access_rating,
+        r.overall_rating,
+        r.comment,
+        r.toiletries_available,
+        r.created_at,
+        u.id as user_id,
+        u.username,
+        u.avatar
+      FROM reviews r
+      JOIN users u ON r.user_id = u.id
+      JOIN friends f ON f.friend_id = r.user_id AND f.user_id = $1
+      WHERE r.washroom_id = $2
+      ORDER BY r.created_at DESC`,
+      [userId, washroomId]
+    );
+
+    res.json({ reviews: result.rows });
+  } catch (error) {
+    console.error('Get friends reviews by washroom error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 export const updateReview = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
