@@ -28,8 +28,11 @@ if (process.env.DATABASE_URL) {
 export const pool = new Pool(poolConfig);
 
 // Test database connection
-pool.on('connect', () => {
-  console.log('Connected to PostgreSQL database');
+pool.on('connect', (client) => {
+  const dbInfo = process.env.DATABASE_URL 
+    ? (process.env.DATABASE_URL.includes('supabase') ? 'Supabase (shared)' : 'Cloud database')
+    : 'Local database';
+  console.log(`✅ Connected to PostgreSQL database (${dbInfo})`);
 });
 
 pool.on('error', (err) => {

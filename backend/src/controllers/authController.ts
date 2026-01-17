@@ -33,6 +33,7 @@ export const register = async (req: Request, res: Response) => {
     );
 
     const user = result.rows[0];
+    console.log(`✅ User created in shared database: ${username} (ID: ${user.id})`);
 
     // Generate JWT token
     const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, {
