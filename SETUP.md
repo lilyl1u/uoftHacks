@@ -1,5 +1,7 @@
 # Quick Setup Guide
 
+> **Want to share data with your team?** See [SHARED_DATABASE_SETUP.md](./SHARED_DATABASE_SETUP.md) for setting up a cloud database that everyone can access.
+
 ## Issue: "Signup failed. Please try again."
 
 This error occurs because the **backend server is not running**. Follow these steps:

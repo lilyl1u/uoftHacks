@@ -1,11 +1,44 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Icon } from 'leaflet';
+import { DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { washroomService } from '../services/api';
 import RatingModal from '../components/RatingModal';
 import AddWashroomModal from '../components/AddWashroomModal';
 import './MapPage.css';
+
+// Error boundary component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('MapPage error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="map-container" style={{ padding: '2rem' }}>
+          <h2>Something went wrong</h2>
+          <p>{this.state.error?.message || 'An error occurred'}</p>
+          <button onClick={() => window.location.reload()}>Reload Page</button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 interface Washroom {
   id: number;
@@ -14,7 +47,7 @@ interface Washroom {
   floor: number | null;
   latitude: number;
   longitude: number;
-  average_rating: number;
+  average_rating: number | string | null; // Can be string from DB
   total_reviews: number;
   accessibility: boolean;
   paid_access: boolean;
@@ -27,15 +60,58 @@ const MapPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fix for default marker icon in react-leaflet
-  const customIcon = new Icon({
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  });
+  // Helper function to safely convert rating to number
+  const getRating = (rating: any): number => {
+    if (rating == null || rating === '') return 0;
+    const num = typeof rating === 'string' ? parseFloat(rating) : Number(rating);
+    return isNaN(num) ? 0 : num;
+  };
+
+  // Create custom washroom icon based on rating and accessibility
+  const createWashroomIcon = (rating: number | string | null, isAccessible: boolean) => {
+    const numRating = getRating(rating);
+    // Choose emoji/color based on rating
+    let emoji = '🚽'; // Default
+    let bgColor = '#4A90E2'; // Blue
+    
+    if (isAccessible) {
+      emoji = '♿';
+      bgColor = '#9B59B6'; // Purple for accessible
+    } else if (numRating >= 4.5) {
+      emoji = '🚽';
+      bgColor = '#2ECC71'; // Green for high rating
+    } else if (numRating >= 3.5) {
+      emoji = '🚽';
+      bgColor = '#F39C12'; // Orange for medium rating
+    } else if (numRating > 0) {
+      emoji = '🚽';
+      bgColor = '#E74C3C'; // Red for low rating
+    }
+
+    return new DivIcon({
+      className: 'custom-washroom-icon',
+      html: `
+        <div style="
+          background-color: ${bgColor};
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          border: 3px solid white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          cursor: pointer;
+        ">
+          ${emoji}
+        </div>
+      `,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+      popupAnchor: [0, -20],
+    });
+  };
 
   useEffect(() => {
     loadWashrooms();
@@ -44,9 +120,36 @@ const MapPage = () => {
   const loadWashrooms = async () => {
     try {
       const data = await washroomService.getAll();
-      setWashrooms(data.washrooms || []);
+      const washroomsList = data.washrooms || [];
+      console.log('Loaded washrooms:', washroomsList);
+      console.log('Number of washrooms:', washroomsList.length);
+      
+      // Filter out washrooms with invalid coordinates and normalize types
+      const validWashrooms = washroomsList.filter(
+        (w: Washroom) => {
+          const lat = typeof w.latitude === 'string' ? parseFloat(w.latitude) : w.latitude;
+          const lng = typeof w.longitude === 'string' ? parseFloat(w.longitude) : w.longitude;
+          return lat != null && 
+                 lng != null && 
+                 !isNaN(lat) && 
+                 !isNaN(lng) &&
+                 lat >= -90 && lat <= 90 &&
+                 lng >= -180 && lng <= 180;
+        }
+      ).map((w: Washroom) => ({
+        ...w,
+        latitude: typeof w.latitude === 'string' ? parseFloat(w.latitude) : w.latitude,
+        longitude: typeof w.longitude === 'string' ? parseFloat(w.longitude) : w.longitude,
+      }));
+      
+      if (validWashrooms.length !== washroomsList.length) {
+        console.warn(`Filtered out ${washroomsList.length - validWashrooms.length} washrooms with invalid coordinates`);
+      }
+      
+      setWashrooms(validWashrooms);
     } catch (error) {
       console.error('Failed to load washrooms:', error);
+      setWashrooms([]);
     } finally {
       setLoading(false);
     }
@@ -69,11 +172,16 @@ const MapPage = () => {
   };
 
   if (loading) {
-    return <div className="map-container">Loading washrooms...</div>;
+    return (
+      <div className="map-container">
+        <div style={{ padding: '2rem', textAlign: 'center' }}>Loading washrooms...</div>
+      </div>
+    );
   }
 
   return (
-    <div className="map-container">
+    <ErrorBoundary>
+      <div className="map-container">
       <div className="map-header">
         <h1>UofT Washroom Map</h1>
         <button onClick={() => setShowAddModal(true)} className="add-button">
@@ -82,7 +190,33 @@ const MapPage = () => {
       </div>
 
       <div className="map-content">
-        <div className="map-wrapper">
+        <div className="map-wrapper" style={{ position: 'relative' }}>
+          {washrooms.length === 0 && !loading && (
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: 'rgba(255, 255, 255, 0.95)',
+              padding: '2rem',
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+              zIndex: 1000,
+              textAlign: 'center',
+              maxWidth: '300px',
+            }}>
+              <p style={{ fontSize: '1.2rem', marginBottom: '1rem', color: '#2c3e50' }}>
+                🗺️ No washrooms yet
+              </p>
+              <p style={{ fontSize: '0.9rem', color: '#7f8c8d', marginBottom: '1rem' }}>
+                Click "+ Add Washroom" to add the first washroom to the map!
+              </p>
+              <p style={{ fontSize: '0.8rem', color: '#95a5a6' }}>
+                Map centered on UofT campus<br />
+                (43.6629, -79.3957)
+              </p>
+            </div>
+          )}
           <MapContainer 
             center={[43.6629, -79.3957]} // UofT campus coordinates
             zoom={15} 
@@ -96,7 +230,10 @@ const MapPage = () => {
               <Marker 
                 key={washroom.id} 
                 position={[washroom.latitude, washroom.longitude]}
-                icon={customIcon}
+                icon={createWashroomIcon(washroom.average_rating, washroom.accessibility)}
+                eventHandlers={{
+                  click: () => handleWashroomClick(washroom),
+                }}
               >
                 <Popup>
                   <div className="popup-content">
@@ -106,7 +243,7 @@ const MapPage = () => {
                       {washroom.floor !== null && ` - Floor ${washroom.floor}`}</p>
                     )}
                     <div className="popup-rating">
-                      ⭐ {washroom.average_rating.toFixed(1)} ({washroom.total_reviews} reviews)
+                      ⭐ {getRating(washroom.average_rating).toFixed(1)} ({washroom.total_reviews} reviews)
                     </div>
                     <div className="popup-tags">
                       {washroom.accessibility && <span className="tag">♿ Accessible</span>}
@@ -127,7 +264,14 @@ const MapPage = () => {
 
         <div className="washrooms-list">
           <h2>Washrooms ({washrooms.length})</h2>
-          {washrooms.length > 0 ? (
+          {!loading && washrooms.length === 0 ? (
+            <div>
+              <p className="no-washrooms">No washrooms found. Be the first to add one!</p>
+              <p style={{ fontSize: '0.9rem', color: '#95a5a6', marginTop: '1rem' }}>
+                Click the "+ Add Washroom" button to add a washroom to the map.
+              </p>
+            </div>
+          ) : washrooms.length > 0 ? (
             <div className="washroom-cards">
               {washrooms.map((washroom) => (
                 <div
@@ -138,7 +282,7 @@ const MapPage = () => {
                   <div className="washroom-header">
                     <h3>{washroom.name}</h3>
                     <div className="rating-badge">
-                      ⭐ {washroom.average_rating.toFixed(1)} ({washroom.total_reviews})
+                      ⭐ {getRating(washroom.average_rating).toFixed(1)} ({washroom.total_reviews})
                     </div>
                   </div>
                   {washroom.building && (
@@ -158,9 +302,7 @@ const MapPage = () => {
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="no-washrooms">No washrooms found. Be the first to add one!</p>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -181,7 +323,8 @@ const MapPage = () => {
           onSubmit={handleAddWashroom}
         />
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 
