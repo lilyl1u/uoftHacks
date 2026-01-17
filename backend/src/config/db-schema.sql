@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   avatar TEXT,
   personality_type VARCHAR(100),
   badges TEXT[], -- Array of badge names
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS washrooms (
   floor INTEGER,
   latitude DECIMAL(10, 8) NOT NULL,
   longitude DECIMAL(11, 8) NOT NULL,
+  campus VARCHAR(100) DEFAULT 'UofT' CHECK (campus IN ('UofT', 'Waterloo')),
   average_rating DECIMAL(3, 2) DEFAULT 0,
   total_reviews INTEGER DEFAULT 0,
   accessibility BOOLEAN DEFAULT false,
@@ -55,9 +57,23 @@ CREATE TABLE IF NOT EXISTS user_washroom_visits (
   UNIQUE(user_id, washroom_id)
 );
 
+-- Friends table (mutual friendships - both directions stored)
+CREATE TABLE IF NOT EXISTS friends (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  friend_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, friend_id),
+  CHECK (user_id != friend_id) -- Prevent self-friendship
+);
+
 -- Indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_washrooms_location ON washrooms(latitude, longitude);
+CREATE INDEX IF NOT EXISTS idx_washrooms_campus ON washrooms(campus);
 CREATE INDEX IF NOT EXISTS idx_reviews_washroom ON reviews(washroom_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_user ON reviews(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_visits_user ON user_washroom_visits(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_visits_washroom ON user_washroom_visits(washroom_id);
+CREATE INDEX IF NOT EXISTS idx_friends_user ON friends(user_id);
+CREATE INDEX IF NOT EXISTS idx_friends_friend ON friends(friend_id);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);

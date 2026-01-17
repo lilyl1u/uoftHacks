@@ -198,6 +198,48 @@ export const getUserReviews = async (req: Request, res: Response) => {
   }
 };
 
+export const getFriendsReviews = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Get reviews from all friends, ordered by most recent
+    const result = await pool.query(
+      `SELECT 
+        r.id,
+        r.washroom_id,
+        r.cleanliness_rating,
+        r.privacy_rating,
+        r.wait_time_rating,
+        r.overall_rating,
+        r.comment,
+        r.created_at,
+        w.name as washroom_name,
+        w.building,
+        w.latitude,
+        w.longitude,
+        u.id as user_id,
+        u.username,
+        u.avatar
+      FROM reviews r
+      JOIN washrooms w ON r.washroom_id = w.id
+      JOIN users u ON r.user_id = u.id
+      JOIN friends f ON f.friend_id = r.user_id AND f.user_id = $1
+      ORDER BY r.created_at DESC
+      LIMIT 50`,
+      [userId]
+    );
+
+    res.json({ reviews: result.rows });
+  } catch (error) {
+    console.error('Get friends reviews error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 export const updateReview = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

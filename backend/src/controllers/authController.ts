@@ -28,7 +28,7 @@ export const register = async (req: Request, res: Response) => {
 
     // Create user
     const result = await pool.query(
-      'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username, created_at',
+      'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username, role, created_at',
       [username, passwordHash]
     );
 
@@ -42,7 +42,7 @@ export const register = async (req: Request, res: Response) => {
 
     res.status(201).json({
       message: 'User created successfully',
-      user: { id: user.id, username: user.username },
+      user: { id: user.id, username: user.username, role: user.role || 'user' },
       token,
     });
   } catch (error: any) {
@@ -76,7 +76,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Find user
     const result = await pool.query(
-      'SELECT id, username, password_hash FROM users WHERE username = $1',
+      'SELECT id, username, password_hash, role FROM users WHERE username = $1',
       [username]
     );
 
@@ -100,7 +100,7 @@ export const login = async (req: Request, res: Response) => {
 
     res.json({
       message: 'Login successful',
-      user: { id: user.id, username: user.username },
+      user: { id: user.id, username: user.username, role: user.role || 'user' },
       token,
     });
   } catch (error: any) {

@@ -25,6 +25,9 @@ const Layout = () => {
             <Link to="/app/profile" className="nav-link">
               Profile
             </Link>
+            <Link to="/app/explore" className="nav-link">
+              Explore
+            </Link>
             <span className="nav-user">Welcome, {user?.username}</span>
             <button onClick={handleLogout} className="nav-button">
               Logout

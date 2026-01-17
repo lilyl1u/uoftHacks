@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { userService } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { friendsService } from '../services/api';
 import './FriendsList.css';
 
 interface Friend {
@@ -19,6 +20,7 @@ const FriendsList = ({ userId, isOpen, onClose }: FriendsListProps) => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isOpen) {
@@ -30,7 +32,7 @@ const FriendsList = ({ userId, isOpen, onClose }: FriendsListProps) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await userService.getFriends(userId);
+      const data = await friendsService.getFriends(userId);
       setFriends(data);
     } catch (err) {
       console.error('Failed to load friends:', err);
@@ -39,6 +41,11 @@ const FriendsList = ({ userId, isOpen, onClose }: FriendsListProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFriendClick = (friendId: number) => {
+    navigate(`/app/profile/${friendId}`);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -58,7 +65,12 @@ const FriendsList = ({ userId, isOpen, onClose }: FriendsListProps) => {
         {!loading && friends && friends.length > 0 ? (
           <div className="friends-list">
             {friends.map((friend) => (
-              <div key={friend.id} className="friend-item">
+              <div 
+                key={friend.id} 
+                className="friend-item"
+                onClick={() => handleFriendClick(friend.id)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="friend-avatar-modal">
                   {friend.avatar ? (
                     <img src={friend.avatar} alt={friend.username} />

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { userService, reviewService } from '../services/api';
+import { userService, reviewService, friendsService } from '../services/api';
 import FriendsList from '../components/FriendsList';
+import UserSearch from '../components/UserSearch';
+import ChampionBoard from '../components/ChampionBoard';
 import './ProfilePage.css';
 
 interface UserProfile {
@@ -12,13 +15,16 @@ interface UserProfile {
   personality_type: string | null;
   badges: string[] | null;
   washrooms_visited: number;
-  washroom_visits: Array<{
+  washroom_visits?: Array<{
     id: number;
     name: string;
     building: string;
     visit_count: number;
     last_visited: string;
   }>;
+  isLimited?: boolean;
+  isOwnProfile?: boolean;
+  message?: string;
 }
 
 interface Review {
@@ -87,6 +93,8 @@ const getBadgeInfo = (badgeName: string): BadgeInfo | undefined => {
 
 const ProfilePage = () => {
   const { user } = useAuth();
+  const { userId } = useParams<{ userId?: string }>();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [personality, setPersonality] = useState('');
@@ -98,28 +106,87 @@ const ProfilePage = () => {
   const [editData, setEditData] = useState({ username: '', email: '', avatar: '' });
   const [reviews, setReviews] = useState<Review[]>([]);
   const [wrappedData, setWrappedData] = useState<any>(null);
+  const [isFriend, setIsFriend] = useState(false);
+  const [friendshipLoading, setFriendshipLoading] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [showUserSearch, setShowUserSearch] = useState(false);
+
+  const viewingUserId = userId ? parseInt(userId) : user?.id;
+  const isOwnProfile = !userId || viewingUserId === user?.id;
 
   useEffect(() => {
-    if (user) {
+    if (user && viewingUserId) {
       loadProfile();
+      if (!isOwnProfile) {
+        loadFriendshipStatus();
+      }
     }
-  }, [user]);
+  }, [user, viewingUserId, isOwnProfile]);
 
   const loadProfile = async () => {
-    if (!user) return;
+    if (!user || !viewingUserId) return;
     try {
-      const data = await userService.getProfile(user.id);
+      setLoading(true);
+      const data = await userService.getProfile(viewingUserId);
       setProfile(data);
-      setEditData({ username: data.username, email: data.email || '', avatar: data.avatar || '' });
-      setPersonality(data.personality_type || '');
       
-      // Load user reviews
-      const reviewsData = await reviewService.getUserReviews(user.id);
-      setReviews(reviewsData || []);
+      if (!data.isLimited) {
+        setEditData({ username: data.username, email: data.email || '', avatar: data.avatar || '' });
+        setPersonality(data.personality_type || '');
+        
+        // Load user reviews only for full profiles
+        const reviewsData = await reviewService.getUserReviews(viewingUserId);
+        setReviews(reviewsData || []);
+      } else {
+        setReviews([]);
+      }
     } catch (error) {
       console.error('Failed to load profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadFriendshipStatus = async () => {
+    if (!user || !viewingUserId || isOwnProfile) return;
+    try {
+      setFriendshipLoading(true);
+      const status = await friendsService.getFriendshipStatus(viewingUserId);
+      setIsFriend(status.isFriend);
+    } catch (error) {
+      console.error('Failed to load friendship status:', error);
+    } finally {
+      setFriendshipLoading(false);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!user || !viewingUserId || isOwnProfile) return;
+    try {
+      setFollowLoading(true);
+      await friendsService.followUser(viewingUserId);
+      setIsFriend(true);
+      // Reload profile to get full data
+      await loadProfile();
+    } catch (error) {
+      console.error('Failed to follow user:', error);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleUnfollow = async () => {
+    if (!user || !viewingUserId || isOwnProfile) return;
+    try {
+      setFollowLoading(true);
+      await friendsService.unfollowUser(viewingUserId);
+      setIsFriend(false);
+      // Reload profile to get limited data
+      await loadProfile();
+    } catch (error) {
+      console.error('Failed to unfollow user:', error);
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -187,6 +254,64 @@ const ProfilePage = () => {
     return <div className="profile-container">Failed to load profile</div>;
   }
 
+  // Limited profile view (not friends and not own profile)
+  if (profile.isLimited) {
+    return (
+      <div className="profile-container">
+        <div className="user-info-section">
+          <div className="user-info-left">
+            <div className="profile-avatar-large">
+              {profile.avatar ? (
+                <img src={profile.avatar} alt="Avatar" />
+              ) : (
+                <div className="avatar-placeholder-large">
+                  {profile.username.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="user-info-right">
+            <div className="user-info-row">
+              <div className="user-info-item">
+                <span className="user-info-label">Name:</span>
+                <span className="user-info-value">{profile.username}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '2rem',
+          background: 'white',
+          borderRadius: '12px',
+          marginTop: '2rem',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <p style={{ fontSize: '1.1rem', color: '#7f8c8d', marginBottom: '1.5rem' }}>
+            {profile.message || 'Follow this user to see their full profile'}
+          </p>
+          <button
+            onClick={handleFollow}
+            disabled={followLoading}
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              padding: '0.75rem 2rem',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: followLoading ? 'not-allowed' : 'pointer',
+              opacity: followLoading ? 0.6 : 1
+            }}
+          >
+            {followLoading ? 'Following...' : 'Follow'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="profile-container">
       {/* User Info Section */}
@@ -201,12 +326,14 @@ const ProfilePage = () => {
               </div>
             )}
           </div>
-          <button
-            onClick={() => setShowEditModal(true)}
-            className="edit-profile-button-under-avatar"
-          >
-            Edit Profile
-          </button>
+          {isOwnProfile && (
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="edit-profile-button-under-avatar"
+            >
+              Edit Profile
+            </button>
+          )}
         </div>
         <div className="user-info-right">
           <div className="user-info-row">
@@ -223,19 +350,54 @@ const ProfilePage = () => {
           </div>
         </div>
         <div className="user-info-buttons">
+          {!isOwnProfile && (
+            <button
+              onClick={isFriend ? handleUnfollow : handleFollow}
+              disabled={followLoading || friendshipLoading}
+              style={{
+                background: isFriend 
+                  ? '#e74c3c' 
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: (followLoading || friendshipLoading) ? 'not-allowed' : 'pointer',
+                opacity: (followLoading || friendshipLoading) ? 0.6 : 1,
+                marginRight: '1rem'
+              }}
+            >
+              {followLoading 
+                ? (isFriend ? 'Unfollowing...' : 'Following...') 
+                : (isFriend ? 'Unfollow' : 'Follow')}
+            </button>
+          )}
           <button
             onClick={() => setShowFriendsModal(true)}
             className="friends-button"
           >
             Friends
           </button>
-          <button
-            onClick={generateWrappedData}
-            className="wrapped-text-button"
-            title="View Your Year in Washrooms"
-          >
-            Washroom Finder Wrapped
-          </button>
+          {isOwnProfile && (
+            <button
+              onClick={() => setShowUserSearch(true)}
+              className="friends-button"
+              style={{ marginLeft: '0.5rem' }}
+            >
+              Search Users
+            </button>
+          )}
+          {isOwnProfile && (
+            <button
+              onClick={generateWrappedData}
+              className="wrapped-text-button"
+              title="View Your Year in Washrooms"
+            >
+              Washroom Finder Wrapped
+            </button>
+          )}
         </div>
       </div>
 
@@ -471,9 +633,14 @@ const ProfilePage = () => {
       )}
 
       <FriendsList 
-        userId={profile.id} 
+        userId={viewingUserId || user?.id || 0} 
         isOpen={showFriendsModal} 
         onClose={() => setShowFriendsModal(false)}
+      />
+
+      <UserSearch
+        isOpen={showUserSearch}
+        onClose={() => setShowUserSearch(false)}
       />
 
       {selectedBadge && (
@@ -494,6 +661,11 @@ const ProfilePage = () => {
           </div>
         </div>
       )}
+
+      {/* Champion Board - at bottom */}
+      <div style={{ marginTop: '2rem' }}>
+        <ChampionBoard />
+      </div>
     </div>
   );
 };

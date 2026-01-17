@@ -8,6 +8,7 @@ import './Modal.css';
 interface AddWashroomModalProps {
   onClose: () => void;
   onSubmit: () => void;
+  campus?: string;
 }
 
 // Component to handle map clicks
@@ -23,6 +24,7 @@ const MapClickHandler = ({ onMapClick }: { onMapClick: (lat: number, lng: number
 const AddWashroomModal: React.FC<AddWashroomModalProps> = ({
   onClose,
   onSubmit,
+  campus = 'UofT',
 }) => {
   const [name, setName] = useState('');
   const [building, setBuilding] = useState('');
@@ -52,6 +54,13 @@ const AddWashroomModal: React.FC<AddWashroomModalProps> = ({
 
   const handleMapClick = (lat: number, lng: number) => {
     setSelectedLocation({ lat, lng });
+  };
+
+  const getMapCenter = (): [number, number] => {
+    if (campus === 'Waterloo') {
+      return [43.4723, -80.5449]; // University of Waterloo coordinates
+    }
+    return [43.6629, -79.3957]; // UofT campus coordinates
   };
 
   const handleUseCurrentLocation = () => {
@@ -95,6 +104,7 @@ const AddWashroomModal: React.FC<AddWashroomModalProps> = ({
         floor: floor ? parseInt(floor) : null,
         latitude: selectedLocation.lat,
         longitude: selectedLocation.lng,
+        campus,
         accessibility,
         paid_access: paidAccess,
       });
@@ -168,8 +178,8 @@ const AddWashroomModal: React.FC<AddWashroomModalProps> = ({
             }}>
               {mapReady ? (
                 <MapContainer
-                  key="add-washroom-map"
-                  center={[43.6629, -79.3957]} // UofT campus
+                  key={`add-washroom-map-${campus}`}
+                  center={getMapCenter()}
                   zoom={15}
                   style={{ height: '100%', width: '100%' }}
                   scrollWheelZoom={true}

@@ -51,11 +51,16 @@ export const userService = {
     const response = await api.get(`/users/${userId}/badges`);
     return response.data;
   },
+  getTopUsers: async (limit: number = 5) => {
+    const response = await api.get('/users/top', { params: { limit } });
+    return response.data.users;
+  },
 };
 
 export const washroomService = {
-  getAll: async () => {
-    const response = await api.get('/washrooms');
+  getAll: async (campus?: string) => {
+    const params = campus ? { campus } : {};
+    const response = await api.get('/washrooms', { params });
     return response.data;
   },
   getById: async (id: number) => {
@@ -66,11 +71,25 @@ export const washroomService = {
     const response = await api.post('/washrooms', data);
     return response.data;
   },
+  update: async (id: number, data: any) => {
+    const response = await api.put(`/washrooms/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: number) => {
+    const response = await api.delete(`/washrooms/${id}`);
+    return response.data;
+  },
   getNearby: async (lat: number, lng: number, radius?: number) => {
     const response = await api.get('/washrooms/location/nearby', {
       params: { lat, lng, radius },
     });
     return response.data;
+  },
+  getTopVisited: async (limit: number = 5) => {
+    const response = await api.get('/washrooms/top-visited', {
+      params: { limit },
+    });
+    return response.data.washrooms;
   },
 };
 
@@ -87,6 +106,10 @@ export const reviewService = {
     const response = await api.get(`/reviews/user/${userId}`);
     return response.data;
   },
+  getFriendsReviews: async () => {
+    const response = await api.get('/reviews/friends');
+    return response.data.reviews;
+  },
   update: async (reviewId: number, data: any) => {
     const response = await api.put(`/reviews/${reviewId}`, data);
     return response.data;
@@ -94,6 +117,30 @@ export const reviewService = {
   delete: async (reviewId: number) => {
     const response = await api.delete(`/reviews/${reviewId}`);
     return response.data;
+  },
+};
+
+export const friendsService = {
+  getFriends: async (userId?: number) => {
+    const params = userId ? { userId } : {};
+    const response = await api.get('/friends', { params });
+    return response.data.friends;
+  },
+  followUser: async (friendId: number) => {
+    const response = await api.post(`/friends/${friendId}`);
+    return response.data;
+  },
+  unfollowUser: async (friendId: number) => {
+    const response = await api.delete(`/friends/${friendId}`);
+    return response.data;
+  },
+  getFriendshipStatus: async (userId: number) => {
+    const response = await api.get(`/friends/status/${userId}`);
+    return response.data;
+  },
+  searchUsers: async (query: string) => {
+    const response = await api.get('/friends/search', { params: { q: query } });
+    return response.data.users;
   },
 };
 
