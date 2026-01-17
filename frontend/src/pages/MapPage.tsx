@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { washroomService } from '../services/api';
 import RatingModal from '../components/RatingModal';
 import AddWashroomModal from '../components/AddWashroomModal';
+import WashroomDetailsModal from '../components/WashroomDetailsModal';
 import './MapPage.css';
 
 // Error boundary component
@@ -57,6 +58,8 @@ const MapPage = () => {
   const [washrooms, setWashrooms] = useState<Washroom[]>([]);
   const [selectedWashroom, setSelectedWashroom] = useState<Washroom | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -157,7 +160,20 @@ const MapPage = () => {
 
   const handleWashroomClick = (washroom: Washroom) => {
     setSelectedWashroom(washroom);
+    setShowDetailsModal(true);
+  };
+
+  const handleReviewButtonClick = (washroom: Washroom) => {
+    setSelectedWashroom(washroom);
+    setShowReviewModal(false);
     setShowRatingModal(true);
+  };
+
+  const handleAddReviewFromDetails = () => {
+    if (selectedWashroom) {
+      setShowDetailsModal(false);
+      setShowRatingModal(true);
+    }
   };
 
   const handleRatingSubmit = async () => {
@@ -317,11 +333,73 @@ const MapPage = () => {
         />
       )}
 
+      {showDetailsModal && selectedWashroom && (
+        <WashroomDetailsModal
+          washroom={selectedWashroom}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedWashroom(null);
+          }}
+          onAddReview={handleAddReviewFromDetails}
+        />
+      )}
+
       {showAddModal && (
         <AddWashroomModal
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddWashroom}
         />
+      )}
+
+      {showReviewModal && (
+        <div className="modal-overlay" onClick={() => setShowReviewModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Select a Washroom to Review</h2>
+            {washrooms.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#7f8c8d' }}>
+                No washrooms available. Add one first!
+              </p>
+            ) : (
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                {washrooms.map((washroom) => (
+                  <div
+                    key={washroom.id}
+                    style={{
+                      padding: '1rem',
+                      borderBottom: '1px solid #ecf0f1',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f5f7fa'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    onClick={() => handleReviewButtonClick(washroom)}
+                  >
+                    <h4 style={{ margin: '0 0 0.25rem 0', color: '#2c3e50' }}>
+                      {washroom.name}
+                    </h4>
+                    {washroom.building && (
+                      <p style={{ margin: '0', fontSize: '0.9rem', color: '#7f8c8d' }}>
+                        {washroom.building}
+                        {washroom.floor !== null && ` - Floor ${washroom.floor}`}
+                      </p>
+                    )}
+                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', color: '#95a5a6' }}>
+                      ⭐ {getRating(washroom.average_rating).toFixed(1)} ({washroom.total_reviews} reviews)
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="modal-actions" style={{ marginTop: '1rem' }}>
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="cancel-button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       </div>
     </ErrorBoundary>

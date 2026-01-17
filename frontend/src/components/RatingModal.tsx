@@ -20,15 +20,14 @@ const RatingModal: React.FC<RatingModalProps> = ({
   onSubmit,
 }) => {
   const [cleanliness, setCleanliness] = useState(3);
-  const [privacy, setPrivacy] = useState(3);
   const [waitTime, setWaitTime] = useState(3);
   const [accessibility, setAccessibility] = useState(3);
-  const [easeOfAccess, setEaseOfAccess] = useState(3);
   const [comment, setComment] = useState('');
   const [toiletries, setToiletries] = useState({
     soap: false,
     toilet_paper: false,
     paper_towels: false,
+    feminine_products: false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,10 +41,8 @@ const RatingModal: React.FC<RatingModalProps> = ({
       await reviewService.create({
         washroom_id: washroom.id,
         cleanliness_rating: cleanliness,
-        privacy_rating: privacy,
         wait_time_rating: waitTime,
         accessibility_rating: accessibility,
-        ease_of_access_rating: easeOfAccess,
         comment: comment || null,
         toiletries_available: toiletries,
       });
@@ -76,7 +73,7 @@ const RatingModal: React.FC<RatingModalProps> = ({
             className={`star ${star <= value ? 'active' : ''}`}
             onClick={() => onChange(star)}
           >
-            ⭐
+            🚽
           </button>
         ))}
         <span className="rating-value">{value}/5</span>
@@ -100,7 +97,6 @@ const RatingModal: React.FC<RatingModalProps> = ({
             onChange={setCleanliness}
             label="Cleanliness"
           />
-          <StarRating value={privacy} onChange={setPrivacy} label="Privacy" />
           <StarRating
             value={waitTime}
             onChange={setWaitTime}
@@ -110,11 +106,6 @@ const RatingModal: React.FC<RatingModalProps> = ({
             value={accessibility}
             onChange={setAccessibility}
             label="Accessibility"
-          />
-          <StarRating
-            value={easeOfAccess}
-            onChange={setEaseOfAccess}
-            label="Ease of Access"
           />
 
           <div className="form-group">
@@ -155,6 +146,19 @@ const RatingModal: React.FC<RatingModalProps> = ({
                   }
                 />
                 Paper Towels
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={toiletries.feminine_products}
+                  onChange={(e) =>
+                    setToiletries({
+                      ...toiletries,
+                      feminine_products: e.target.checked,
+                    })
+                  }
+                />
+                Feminine Products
               </label>
             </div>
           </div>

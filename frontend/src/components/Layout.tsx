@@ -22,6 +22,9 @@ const Layout = () => {
             <Link to="/app/map" className="nav-link">
               Map
             </Link>
+            <Link to="/app/explore" className="nav-link">
+              Explore
+            </Link>
             <Link to="/app/profile" className="nav-link">
               Profile
             </Link>

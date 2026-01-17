@@ -235,7 +235,7 @@ const AddWashroomModal: React.FC<AddWashroomModalProps> = ({
                 checked={accessibility}
                 onChange={(e) => setAccessibility(e.target.checked)}
               />
-              Accessible (Wheelchair accessible)
+              Wheelchair Accessible
             </label>
           </div>
 

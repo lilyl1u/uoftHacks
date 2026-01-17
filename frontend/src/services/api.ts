@@ -83,6 +83,10 @@ export const reviewService = {
     const response = await api.get(`/reviews/washroom/${washroomId}`);
     return response.data;
   },
+  getAllReviews: async () => {
+    const response = await api.get('/reviews');
+    return response.data;
+  },
   getUserReviews: async (userId: number) => {
     const response = await api.get(`/reviews/user/${userId}`);
     return response.data;
