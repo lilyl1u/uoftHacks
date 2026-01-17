@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { userService, reviewService } from '../services/api';
+import FriendsList from '../components/FriendsList';
 import './ProfilePage.css';
 
 interface UserProfile {
@@ -92,6 +93,8 @@ const ProfilePage = () => {
   const [showPersonalityModal, setShowPersonalityModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showWrappedModal, setShowWrappedModal] = useState(false);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<BadgeInfo | null>(null);
   const [editData, setEditData] = useState({ username: '', email: '', avatar: '' });
   const [reviews, setReviews] = useState<Review[]>([]);
   const [wrappedData, setWrappedData] = useState<any>(null);
@@ -198,6 +201,12 @@ const ProfilePage = () => {
               </div>
             )}
           </div>
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="edit-profile-button-under-avatar"
+          >
+            Edit Profile
+          </button>
         </div>
         <div className="user-info-right">
           <div className="user-info-row">
@@ -212,21 +221,21 @@ const ProfilePage = () => {
               <span className="user-info-value">{profile.email || 'Not set'}</span>
             </div>
           </div>
-          <div className="button-group">
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="edit-profile-button"
-            >
-              Edit Profile
-            </button>
-            <button
-              onClick={generateWrappedData}
-              className="wrapped-text-button"
-              title="View Your Year in Washrooms"
-            >
-              Washroom Finder Wrapped
-            </button>
-          </div>
+        </div>
+        <div className="user-info-buttons">
+          <button
+            onClick={() => setShowFriendsModal(true)}
+            className="friends-button"
+          >
+            Friends
+          </button>
+          <button
+            onClick={generateWrappedData}
+            className="wrapped-text-button"
+            title="View Your Year in Washrooms"
+          >
+            Washroom Finder Wrapped
+          </button>
         </div>
       </div>
 
@@ -248,23 +257,44 @@ const ProfilePage = () => {
         </div>
 
         <div className="badges-section">
-          <h2 className="badges-header">Badges ({profile.badges?.length || 0})</h2>
+          <h2 className="badges-header">Badges ({(profile.badges?.length || 0) + (profile.washrooms_visited >= 1 ? 1 : 0)})</h2>
           <div className="badges-row">
+            {profile.washrooms_visited >= 1 && (
+              <div 
+                className="achievement-badge" 
+                title="Unlocked your first bathroom"
+                onClick={() => setSelectedBadge({
+                  name: 'Unlocked Your First Bathroom',
+                  icon: '🎉',
+                  color: '#FFD700',
+                  description: 'You have visited your first bathroom and completed your first journey!',
+                  earned: true
+                })}
+              >
+                <div className="achievement-icon">🎉</div>
+              </div>
+            )}
             {profile.badges && profile.badges.length > 0 ? (
               profile.badges.map((badge, idx) => {
                 const badgeInfo = getBadgeInfo(badge);
                 return (
-                  <div key={idx} className="badge-medal" title={badgeInfo?.name}>
+                  <div 
+                    key={idx} 
+                    className="badge-medal" 
+                    title={badgeInfo?.name}
+                    onClick={() => setSelectedBadge(badgeInfo || null)}
+                  >
                     {badgeInfo?.icon}
                   </div>
                 );
               })
             ) : (
-              <p className="no-badges-text">Keep visiting washrooms to earn badges!</p>
+              profile.washrooms_visited < 1 && <p className="no-badges-text">Keep visiting washrooms to earn badges!</p>
             )}
           </div>
         </div>
       </div>
+
 
       {/* Recent Visits Section */}
       <div className="recent-visits-section">
@@ -433,6 +463,31 @@ const ProfilePage = () => {
             <button
               onClick={() => setShowWrappedModal(false)}
               className="wrapped-close-button"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      <FriendsList 
+        userId={profile.id} 
+        isOpen={showFriendsModal} 
+        onClose={() => setShowFriendsModal(false)}
+      />
+
+      {selectedBadge && (
+        <div className="modal-overlay" onClick={() => setSelectedBadge(null)}>
+          <div className="badge-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-badge-modal" onClick={() => setSelectedBadge(null)}>✕</button>
+            <div className="badge-detail-icon" style={{ fontSize: '4rem' }}>
+              {selectedBadge.icon}
+            </div>
+            <h2 className="badge-detail-name">{selectedBadge.name}</h2>
+            <p className="badge-detail-description">{selectedBadge.description}</p>
+            <button 
+              className="badge-detail-close"
+              onClick={() => setSelectedBadge(null)}
             >
               Close
             </button>
