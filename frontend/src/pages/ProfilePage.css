@@ -108,15 +108,40 @@
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  align-self: flex-start;
-  margin-top: 0.5rem;
 }
 
 .edit-profile-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  align-items: center;
+}
+
+.wrapped-text-button {
+  background: linear-gradient(135deg, #ff006e 0%, #ffbe0b 50%, #8338ec 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(255, 0, 110, 0.4), 0 0 30px rgba(131, 56, 236, 0.2);
+}
+
+.wrapped-text-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(255, 0, 110, 0.6), 0 0 40px rgba(131, 56, 236, 0.4);
 }
 
 .change-avatar-button {
@@ -188,26 +213,59 @@
   transform: translateY(-2px);
 }
 
+/* Washrooms Visited Section */
+.washrooms-visited-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 180px;
+}
+
+.washrooms-visited-header {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.washrooms-visited-count {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
 /* Badges Section */
 .badges-and-wrapped-container {
   display: flex;
   gap: 2rem;
   align-items: flex-start;
   margin-bottom: 2rem;
+  width: 100%;
 }
 
 .badges-section {
   background: white;
-  padding: 2rem;
-  border-radius: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   flex: 1;
+  min-height: 180px;
 }
 
 .badges-header {
-  color: #2c3e50;
-  font-size: 1.3rem;
+  color: #7f8c8d;
+  font-size: 0.9rem;
   margin: 0 0 1.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .badges-row {
@@ -636,6 +694,15 @@
   }
 
   .edit-profile-button {
+    width: 100%;
+  }
+
+  .button-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .wrapped-text-button {
     width: 100%;
   }
 

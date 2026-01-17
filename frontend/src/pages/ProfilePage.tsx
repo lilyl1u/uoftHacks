@@ -212,12 +212,21 @@ const ProfilePage = () => {
               <span className="user-info-value">{profile.email || 'Not set'}</span>
             </div>
           </div>
-          <button
-            onClick={() => setShowEditModal(true)}
-            className="edit-profile-button"
-          >
-            Edit Profile
-          </button>
+          <div className="button-group">
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="edit-profile-button"
+            >
+              Edit Profile
+            </button>
+            <button
+              onClick={generateWrappedData}
+              className="wrapped-text-button"
+              title="View Your Year in Washrooms"
+            >
+              Washroom Finder Wrapped
+            </button>
+          </div>
         </div>
       </div>
 
@@ -228,17 +237,16 @@ const ProfilePage = () => {
           <span className="personality-display">
             {profile.personality_type || 'Not set'}
           </span>
-          <button
-            onClick={() => setShowPersonalityModal(true)}
-            className="set-personality-button"
-          >
-            {profile.personality_type ? '' : '➕'} {profile.personality_type ? 'Update' : 'Set'}
-          </button>
         </div>
       </div>
 
-      {/* Badges & Wrapped Button Section */}
+      {/* Washrooms Visited & Badges Section */}
       <div className="badges-and-wrapped-container">
+        <div className="washrooms-visited-section">
+          <h2 className="washrooms-visited-header">Washrooms Visited</h2>
+          <div className="washrooms-visited-count">{profile.washrooms_visited}</div>
+        </div>
+
         <div className="badges-section">
           <h2 className="badges-header">Badges ({profile.badges?.length || 0})</h2>
           <div className="badges-row">
@@ -255,16 +263,6 @@ const ProfilePage = () => {
               <p className="no-badges-text">Keep visiting washrooms to earn badges!</p>
             )}
           </div>
-        </div>
-
-        <div className="wrapped-button-section">
-          <button
-            onClick={generateWrappedData}
-            className="view-wrapped-button"
-            title="View Your Year in Washrooms"
-          >
-            ✦
-          </button>
         </div>
       </div>
 
