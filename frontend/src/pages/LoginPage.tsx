@@ -18,7 +18,7 @@ const LoginPage = () => {
 
     try {
       await login(username, password);
-      navigate('/map');
+      navigate('/app/map');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed. Please try again.');
     } finally {

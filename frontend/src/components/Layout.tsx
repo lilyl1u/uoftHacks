@@ -15,14 +15,14 @@ const Layout = () => {
     <div className="layout">
       <nav className="navbar">
         <div className="nav-container">
-          <Link to="/map" className="nav-logo">
+          <Link to="/app/map" className="nav-logo">
             🚽 UofT Washroom Finder
           </Link>
           <div className="nav-links">
-            <Link to="/map" className="nav-link">
+            <Link to="/app/map" className="nav-link">
               Map
             </Link>
-            <Link to="/profile" className="nav-link">
+            <Link to="/app/profile" className="nav-link">
               Profile
             </Link>
             <span className="nav-user">Welcome, {user?.username}</span>

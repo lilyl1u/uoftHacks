@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { userService } from '../services/api';
+import { userService, reviewService } from '../services/api';
+import FriendsList from '../components/FriendsList';
 import './ProfilePage.css';
 
 interface UserProfile {
   id: number;
   username: string;
+  email?: string;
   avatar: string | null;
   personality_type: string | null;
   badges: string[] | null;
@@ -19,12 +21,83 @@ interface UserProfile {
   }>;
 }
 
+interface Review {
+  id: number;
+  rating: number;
+  comment: string;
+  washroom_id: number;
+  created_at: string;
+}
+
+interface BadgeInfo {
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+  earned: boolean;
+}
+
+const getBadgeInfo = (badgeName: string): BadgeInfo | undefined => {
+  const badgeMap: Record<string, BadgeInfo> = {
+    'Explorer': {
+      name: 'Explorer',
+      icon: '🗺️',
+      color: '#FF6B6B',
+      description: 'Visited 5+ washrooms',
+      earned: true
+    },
+    'Frequent Visitor': {
+      name: 'Frequent Visitor',
+      icon: '⭐',
+      color: '#4ECDC4',
+      description: 'Visited 10+ washrooms',
+      earned: true
+    },
+    'Early Bird': {
+      name: 'Early Bird',
+      icon: '🌅',
+      color: '#FFE66D',
+      description: 'Morning Pooper personality',
+      earned: true
+    },
+    'Night Owl': {
+      name: 'Night Owl',
+      icon: '🌙',
+      color: '#5F27CD',
+      description: 'Night Owl personality',
+      earned: true
+    },
+    'Reviewer': {
+      name: 'Reviewer',
+      icon: '💬',
+      color: '#00D2D3',
+      description: 'Left 5+ reviews',
+      earned: true
+    },
+    'Elite': {
+      name: 'Elite',
+      icon: '👑',
+      color: '#FFD700',
+      description: 'Visited 20+ washrooms',
+      earned: true
+    }
+  };
+  return badgeMap[badgeName];
+};
+
 const ProfilePage = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [personality, setPersonality] = useState('');
   const [showPersonalityModal, setShowPersonalityModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showWrappedModal, setShowWrappedModal] = useState(false);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<BadgeInfo | null>(null);
+  const [editData, setEditData] = useState({ username: '', email: '', avatar: '' });
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [wrappedData, setWrappedData] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -37,7 +110,12 @@ const ProfilePage = () => {
     try {
       const data = await userService.getProfile(user.id);
       setProfile(data);
+      setEditData({ username: data.username, email: data.email || '', avatar: data.avatar || '' });
       setPersonality(data.personality_type || '');
+      
+      // Load user reviews
+      const reviewsData = await reviewService.getUserReviews(user.id);
+      setReviews(reviewsData || []);
     } catch (error) {
       console.error('Failed to load profile:', error);
     } finally {
@@ -56,6 +134,51 @@ const ProfilePage = () => {
     }
   };
 
+  const handleEditProfile = async () => {
+    if (!user) return;
+    try {
+      await userService.updateProfile(user.id, {
+        username: editData.username,
+        email: editData.email,
+        avatar: editData.avatar
+      });
+      setProfile((prev) => prev ? {
+        ...prev,
+        username: editData.username,
+        email: editData.email,
+        avatar: editData.avatar
+      } : null);
+      setShowEditModal(false);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+    }
+  };
+
+  const generateWrappedData = () => {
+    if (!profile) return;
+    
+    const favoriteWashroom = profile.washroom_visits && profile.washroom_visits.length > 0
+      ? profile.washroom_visits.reduce((prev, current) =>
+          (prev.visit_count > current.visit_count) ? prev : current
+        )
+      : null;
+
+    const avgRating = reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      : 0;
+
+    setWrappedData({
+      favoriteWashroom,
+      reviewsCount: reviews.length,
+      avgRating,
+      totalVisits: profile.washrooms_visited,
+      mostRecentVisit: profile.washroom_visits && profile.washroom_visits.length > 0
+        ? new Date(profile.washroom_visits[0].last_visited).toLocaleDateString()
+        : null
+    });
+    setShowWrappedModal(true);
+  };
+
   if (loading) {
     return <div className="profile-container">Loading...</div>;
   }
@@ -66,48 +189,116 @@ const ProfilePage = () => {
 
   return (
     <div className="profile-container">
-      <div className="profile-header">
-        <div className="profile-avatar">
-          {profile.avatar ? (
-            <img src={profile.avatar} alt="Avatar" />
-          ) : (
-            <div className="avatar-placeholder">
-              {profile.username.charAt(0).toUpperCase()}
-            </div>
-          )}
+      {/* User Info Section */}
+      <div className="user-info-section">
+        <div className="user-info-left">
+          <div className="profile-avatar-large">
+            {profile.avatar ? (
+              <img src={profile.avatar} alt="Avatar" />
+            ) : (
+              <div className="avatar-placeholder-large">
+                {profile.username.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="edit-profile-button-under-avatar"
+          >
+            Edit Profile
+          </button>
         </div>
-        <h1>{profile.username}</h1>
-        <button
-          onClick={() => setShowPersonalityModal(true)}
-          className="personality-button"
-        >
-          {profile.personality_type || 'Set Personality'}
-        </button>
+        <div className="user-info-right">
+          <div className="user-info-row">
+            <div className="user-info-item">
+              <span className="user-info-label">Name:</span>
+              <span className="user-info-value">{profile.username}</span>
+            </div>
+          </div>
+          <div className="user-info-row">
+            <div className="user-info-item">
+              <span className="user-info-label">Email:</span>
+              <span className="user-info-value">{profile.email || 'Not set'}</span>
+            </div>
+          </div>
+        </div>
+        <div className="user-info-buttons">
+          <button
+            onClick={() => setShowFriendsModal(true)}
+            className="friends-button"
+          >
+            Friends
+          </button>
+          <button
+            onClick={generateWrappedData}
+            className="wrapped-text-button"
+            title="View Your Year in Washrooms"
+          >
+            Washroom Finder Wrapped
+          </button>
+        </div>
       </div>
 
-      <div className="profile-stats">
-        <div className="stat-card">
-          <h3>Washrooms Visited</h3>
-          <p className="stat-number">{profile.washrooms_visited}</p>
+      {/* Personality Section */}
+      <div className="personality-section">
+        <div className="personality-content">
+          <span className="personality-label">Personality:</span>
+          <span className="personality-display">
+            {profile.personality_type || 'Not set'}
+          </span>
         </div>
-        <div className="stat-card">
-          <h3>Badges</h3>
-          <div className="badges">
+      </div>
+
+      {/* Washrooms Visited & Badges Section */}
+      <div className="badges-and-wrapped-container">
+        <div className="washrooms-visited-section">
+          <h2 className="washrooms-visited-header">Washrooms Visited</h2>
+          <div className="washrooms-visited-count">{profile.washrooms_visited}</div>
+        </div>
+
+        <div className="badges-section">
+          <h2 className="badges-header">Badges ({(profile.badges?.length || 0) + (profile.washrooms_visited >= 1 ? 1 : 0)})</h2>
+          <div className="badges-row">
+            {profile.washrooms_visited >= 1 && (
+              <div 
+                className="achievement-badge" 
+                title="Unlocked your first bathroom"
+                onClick={() => setSelectedBadge({
+                  name: 'Unlocked Your First Bathroom',
+                  icon: '🎉',
+                  color: '#FFD700',
+                  description: 'You have visited your first bathroom and completed your first journey!',
+                  earned: true
+                })}
+              >
+                <div className="achievement-icon">🎉</div>
+              </div>
+            )}
             {profile.badges && profile.badges.length > 0 ? (
-              profile.badges.map((badge, idx) => (
-                <span key={idx} className="badge">
-                  {badge}
-                </span>
-              ))
+              profile.badges.map((badge, idx) => {
+                const badgeInfo = getBadgeInfo(badge);
+                return (
+                  <div 
+                    key={idx} 
+                    className="badge-medal" 
+                    title={badgeInfo?.name}
+                    onClick={() => setSelectedBadge(badgeInfo || null)}
+                  >
+                    {badgeInfo?.icon}
+                  </div>
+                );
+              })
             ) : (
-              <p className="no-badges">No badges yet</p>
+              profile.washrooms_visited < 1 && <p className="no-badges-text">Keep visiting washrooms to earn badges!</p>
             )}
           </div>
         </div>
       </div>
 
-      <div className="washroom-visits">
-        <h2>Recent Visits</h2>
+
+      {/* Recent Visits Section */}
+      <div className="recent-visits-section">
+        <h2 className="recent-visits-header">Recent Visits</h2>
         {profile.washroom_visits && profile.washroom_visits.length > 0 ? (
           <div className="visits-list">
             {profile.washroom_visits.map((visit) => (
@@ -157,6 +348,149 @@ const ProfilePage = () => {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && (
+        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="modal-content edit-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Edit Profile</h2>
+            <div className="edit-form">
+              <div className="form-group">
+                <label>Username</label>
+                <input
+                  type="text"
+                  value={editData.username}
+                  onChange={(e) => setEditData({ ...editData, username: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={editData.email}
+                  onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Avatar URL</label>
+                <input
+                  type="text"
+                  value={editData.avatar}
+                  onChange={(e) => setEditData({ ...editData, avatar: e.target.value })}
+                  className="form-input"
+                  placeholder="https://example.com/avatar.jpg"
+                />
+              </div>
+              {editData.avatar && (
+                <div className="avatar-preview">
+                  <p>Preview:</p>
+                  <img src={editData.avatar} alt="Avatar preview" />
+                </div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button onClick={handleEditProfile} className="save-button">
+                Save Changes
+              </button>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="cancel-button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWrappedModal && wrappedData && (
+        <div className="modal-overlay" onClick={() => setShowWrappedModal(false)}>
+          <div className="wrapped-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="close-wrapped" onClick={() => setShowWrappedModal(false)}>✕</button>
+            
+            <div className="wrapped-header">
+              <h1>Your Year in Washrooms</h1>
+              <p className="wrapped-subtitle">Here's what your washroom journey looked like</p>
+            </div>
+
+            <div className="wrapped-stat wrapped-stat-1">
+              <div className="wrapped-icon">🏆</div>
+              <h3>Most Visited Spot</h3>
+              {wrappedData.favoriteWashroom ? (
+                <>
+                  <p className="wrapped-value">{wrappedData.favoriteWashroom.name}</p>
+                  <p className="wrapped-detail">{wrappedData.favoriteWashroom.building}</p>
+                  <p className="wrapped-visits">Visited {wrappedData.favoriteWashroom.visit_count} times</p>
+                </>
+              ) : (
+                <p className="wrapped-value">No visits yet</p>
+              )}
+            </div>
+
+            <div className="wrapped-stat wrapped-stat-2">
+              <div className="wrapped-icon">⭐</div>
+              <h3>Average Rating</h3>
+              <p className="wrapped-value">{wrappedData.avgRating}</p>
+              <p className="wrapped-detail">Based on {wrappedData.reviewsCount} reviews</p>
+            </div>
+
+            <div className="wrapped-stat wrapped-stat-3">
+              <div className="wrapped-icon">📊</div>
+              <h3>Total Visits</h3>
+              <p className="wrapped-value">{wrappedData.totalVisits}</p>
+              <p className="wrapped-detail">Washrooms explored</p>
+            </div>
+
+            <div className="wrapped-stat wrapped-stat-4">
+              <div className="wrapped-icon">💬</div>
+              <h3>Reviews Written</h3>
+              <p className="wrapped-value">{wrappedData.reviewsCount}</p>
+              <p className="wrapped-detail">Helping the community</p>
+            </div>
+
+            {wrappedData.mostRecentVisit && (
+              <div className="wrapped-stat wrapped-stat-5">
+                <div className="wrapped-icon">📅</div>
+                <h3>Most Recent Visit</h3>
+                <p className="wrapped-value">{wrappedData.mostRecentVisit}</p>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowWrappedModal(false)}
+              className="wrapped-close-button"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      <FriendsList 
+        userId={profile.id} 
+        isOpen={showFriendsModal} 
+        onClose={() => setShowFriendsModal(false)}
+      />
+
+      {selectedBadge && (
+        <div className="modal-overlay" onClick={() => setSelectedBadge(null)}>
+          <div className="badge-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-badge-modal" onClick={() => setSelectedBadge(null)}>✕</button>
+            <div className="badge-detail-icon" style={{ fontSize: '4rem' }}>
+              {selectedBadge.icon}
+            </div>
+            <h2 className="badge-detail-name">{selectedBadge.name}</h2>
+            <p className="badge-detail-description">{selectedBadge.description}</p>
+            <button 
+              className="badge-detail-close"
+              onClick={() => setSelectedBadge(null)}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

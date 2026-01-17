@@ -30,7 +30,7 @@ const SignupPage = () => {
 
     try {
       await signup(username, password);
-      navigate('/map');
+      navigate('/app/map');
     } catch (err: any) {
       console.error('Signup error:', err);
       if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
