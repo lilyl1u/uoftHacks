@@ -204,6 +204,20 @@
   font-style: italic;
 }
 
+.custom-washroom-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.custom-washroom-icon div {
+  transition: transform 0.2s ease;
+}
+
+.custom-washroom-icon:hover div {
+  transform: scale(1.15);
+  z-index: 1000;
+}
+
 @media (max-width: 768px) {
   .map-content {
     grid-template-columns: 1fr;

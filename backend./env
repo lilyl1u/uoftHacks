@@ -1,0 +1,10 @@
+```env
+# Supabase Connection String
+DATABASE_URL=postgresql://postgres:uofthacksdb@db.pbdsapvuhscxvoevhbqz.supabase.co:5432/postgres
+
+# Server
+PORT=3001
+
+# JWT Secret (generate a random string)
+JWT_SECRET=ZctEtYVntkOp51U0KUuokhOfCmDmrzNFYkBMBvidHrw=
+```
