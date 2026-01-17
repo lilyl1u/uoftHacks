@@ -1,0 +1,157 @@
+.map-container {
+  width: 100%;
+}
+
+.map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.map-header h1 {
+  color: #2c3e50;
+}
+
+.add-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.add-button:hover {
+  opacity: 0.9;
+}
+
+.map-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.map-placeholder {
+  background: white;
+  padding: 3rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-placeholder p {
+  font-size: 1.5rem;
+  color: #7f8c8d;
+  margin-bottom: 1rem;
+}
+
+.map-note {
+  font-size: 1rem;
+  color: #95a5a6;
+}
+
+.washrooms-list {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.washrooms-list h2 {
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
+}
+
+.washroom-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.washroom-card {
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.washroom-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.washroom-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 0.5rem;
+}
+
+.washroom-header h3 {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.rating-badge {
+  background: #f39c12;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.washroom-location {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.washroom-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tag {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tag.accessibility {
+  background: #3498db;
+  color: white;
+}
+
+.tag.paid {
+  background: #e74c3c;
+  color: white;
+}
+
+.no-washrooms {
+  text-align: center;
+  color: #95a5a6;
+  padding: 2rem;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .map-content {
+    grid-template-columns: 1fr;
+  }
+}
