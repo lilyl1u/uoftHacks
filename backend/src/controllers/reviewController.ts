@@ -65,6 +65,15 @@ export const createReview = async (req: Request, res: Response) => {
           washroom_id,
         ]
       );
+
+      // Update last_visited timestamp even when updating existing review
+      await pool.query(
+        `INSERT INTO user_washroom_visits (user_id, washroom_id, visit_count, last_visited)
+         VALUES ($1, $2, 1, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id, washroom_id) 
+         DO UPDATE SET last_visited = CURRENT_TIMESTAMP`,
+        [userId, washroom_id]
+      );
     } else {
       // Create new review
       reviewResult = await pool.query(

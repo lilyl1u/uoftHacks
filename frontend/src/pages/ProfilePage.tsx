@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { userService, reviewService, friendsService } from '../services/api';
 import FriendsList from '../components/FriendsList';
@@ -106,6 +106,7 @@ const getBadgeInfo = (badgeName: string): BadgeInfo | undefined => {
 const ProfilePage = () => {
   const { user } = useAuth();
   const { userId } = useParams<{ userId?: string }>();
+  const location = useLocation();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [personality, setPersonality] = useState('');
@@ -169,7 +170,19 @@ const ProfilePage = () => {
       // Reset generation attempt flag when profile changes
       setHasAttemptedGeneration(false);
     }
-  }, [user, viewingUserId, isOwnProfile]);
+  }, [user, viewingUserId, isOwnProfile, location.key]);
+
+  // Refresh profile when window regains focus (e.g., after submitting a review)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user && viewingUserId && !loading) {
+        loadProfile();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user, viewingUserId, loading]);
 
   useEffect(() => {
     // Auto-generate personality for own profile if not set, or load description if set
