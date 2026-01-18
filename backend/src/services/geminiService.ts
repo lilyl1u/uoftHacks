@@ -24,7 +24,7 @@ const PERSONALITY_TYPES = [
   'Night Owl',
   'Campus Nomad',
   'Home Base Loyalist',
-  'Heavy Launcher',
+  'Frequent Flyer',
   'Routine Master',
   'Quality Seeker'
 ];
@@ -34,7 +34,7 @@ const PERSONALITY_DESCRIPTIONS: Record<string, string> = {
   'Night Owl': 'You thrive when the sun goes down! Most of your washroom visits happen during evening and night hours (6pm-6am). You\'re comfortable navigating campus after dark and probably know all the best late-night spots that stay open.',
   'Campus Nomad': 'You\'re an explorer at heart! You visit many different washrooms across campus, rarely sticking to the same spot. Your high location diversity shows you love discovering new places and aren\'t afraid to venture out of your comfort zone.',
   'Home Base Loyalist': 'You\'ve found your spot and you stick with it! You primarily visit the same 1-2 washrooms, showing you value consistency and familiarity. You know these washrooms inside and out, and they feel like your second home on campus.',
-  'Heavy Launcher': 'You\'re a frequent visitor with a high visit frequency! You visit washrooms multiple times throughout the day, showing you\'re always on the go. Your active lifestyle means you\'ve probably tried more washrooms than most.',
+  'Frequent Flyer': 'You\'re a frequent visitor with a high visit frequency! You visit washrooms multiple times throughout the day, showing you\'re always on the go. Your active lifestyle means you\'ve probably tried more washrooms than most.',
   'Routine Master': 'You have a schedule and you stick to it! Your visits show a consistent pattern, whether it\'s the same time of day or same days of the week. You\'re organized, predictable, and probably never get caught off guard.',
   'Quality Seeker': 'You only settle for the best! You primarily visit and rate highly-rated washrooms, showing you have high standards. You\'d rather wait or travel further for a quality experience than settle for subpar facilities.'
 };
@@ -65,7 +65,7 @@ Personality Types Available:
 2. Night Owl - Most visits in evening/night hours (6pm-6am)
 3. Campus Nomad - High location diversity, visits many different washrooms
 4. Home Base Loyalist - Low location diversity, visits same 1-2 washrooms repeatedly
-5. Heavy Launcher - Very high visit frequency (multiple times per day)
+5. Frequent Flyer - Very high visit frequency (multiple times per day)
 6. Routine Master - High visit consistency, predictable schedule
 7. Quality Seeker - Primarily visits highly-rated washrooms, gives high average ratings
 
@@ -74,7 +74,7 @@ Based on the data, determine the SINGLE best personality type that matches this 
 - If evening/night visits > 40% of total → Night Owl
 - If location diversity > 0.7 → Campus Nomad
 - If location diversity < 0.3 AND unique washrooms <= 2 → Home Base Loyalist
-- If visit frequency > 10 per week → Heavy Launcher
+- If visit frequency > 10 per week → Frequent Flyer
 - If visit consistency > 0.7 → Routine Master
 - If average rating > 4.0 AND review count > 5 → Quality Seeker
 
@@ -116,7 +116,7 @@ const getPersonalityFallback = (visitData: UserVisitData): { personality: string
 
   // Priority order based on strongest indicators
   if (visitData.visitFrequency > 10) {
-    return { personality: 'Heavy Launcher', description: PERSONALITY_DESCRIPTIONS['Heavy Launcher'] };
+    return { personality: 'Frequent Flyer', description: PERSONALITY_DESCRIPTIONS['Frequent Flyer'] };
   }
   if (visitData.locationDiversity < 0.3 && visitData.uniqueWashrooms <= 2) {
     return { personality: 'Home Base Loyalist', description: PERSONALITY_DESCRIPTIONS['Home Base Loyalist'] };

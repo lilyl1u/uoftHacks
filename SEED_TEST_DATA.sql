@@ -12,7 +12,7 @@ INSERT INTO users (username, password_hash, role, personality_type) VALUES
 ('charlie_pooper', '$2a$10$rOzJqZqJqZqJqZqJqZqJqOeJqZqJqZqJqZqJqZqJqZqJqZqJqZqJq', 'user', 'Morning Pooper'),
 ('diana_finder', '$2a$10$rOzJqZqJqZqJqZqJqZqJqOeJqZqJqZqJqZqJqZqJqZqJqZqJqZqJq', 'user', 'Night Owl'),
 ('eve_explorer', '$2a$10$rOzJqZqJqZqJqZqJqZqJqOeJqZqJqZqJqZqJqZqJqZqJqZqJqZqJq', 'user', 'Explorer'),
-('frank_visitor', '$2a$10$rOzJqZqJqZqJqZqJqZqJqOeJqZqJqZqJqZqJqZqJqZqJqZqJqZqJq', 'user', 'Heavy Launcher'),
+('frank_visitor', '$2a$10$rOzJqZqJqZqJqZqJqZqJqOeJqZqJqZqJqZqJqZqJqZqJqZqJqZqJq', 'user', 'Frequent Flyer'),
 ('grace_mapper', '$2a$10$rOzJqZqJqZqJqZqJqZqJqOeJqZqJqZqJqZqJqZqJqZqJqZqJqZqJq', 'user', 'Regular Reporter'),
 ('henry_rated', '$2a$10$rOzJqZqJqZqJqZqJqZqJqOeJqZqJqZqJqZqJqZqJqZqJqZqJqZqJq', 'user', 'Morning Pooper'),
 ('ivy_student', '$2a$10$rOzJqZqJqZqJqZqJqZqJqOeJqZqJqZqJqZqJqZqJqZqJqZqJqZqJq', 'user', 'Night Owl'),

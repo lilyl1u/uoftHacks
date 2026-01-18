@@ -499,7 +499,7 @@ const ProfilePage = () => {
           </h2>
           <div className="bio-box">
             <p className="bio-text">
-              {profile.bio || 'Enter bio'}
+              {profile.bio || 'Bio loading...'}
             </p>
           </div>
         </div>
@@ -767,7 +767,7 @@ const ProfilePage = () => {
               className="personality-select"
             >
               <option value="">Select personality...</option>
-              <option value="Heavy Launcher">Heavy Launcher</option>
+              <option value="Frequent Flyer">Frequent Flyer</option>
               <option value="Morning Pooper">Morning Pooper</option>
               <option value="Night Owl">Night Owl</option>
               <option value="Explorer">Explorer</option>

@@ -31,7 +31,7 @@ The Gemini API analyzes user visit patterns to determine their personality type:
 2. **Night Owl** - Most visits in evening/night hours (6pm-6am)
 3. **Campus Nomad** - High location diversity, visits many different washrooms
 4. **Home Base Loyalist** - Low location diversity, visits same 1-2 washrooms repeatedly
-5. **Heavy Launcher** - Very high visit frequency (multiple times per day)
+5. **Frequent Flyer** - Very high visit frequency (multiple times per day)
 6. **Routine Master** - High visit consistency, predictable schedule
 7. **Quality Seeker** - Primarily visits highly-rated washrooms, gives high average ratings
 
