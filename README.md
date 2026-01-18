@@ -1,6 +1,6 @@
-# UofT Washroom Finder
+# <Insert Name>
 
-A collaborative washroom rating and mapping app for University of Toronto.
+A collaborative washroom rating and mapping app for different University campuses
 
 ## Quick Start
 
