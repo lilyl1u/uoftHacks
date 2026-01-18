@@ -273,6 +273,46 @@
   transform: translateY(-2px);
 }
 
+.generate-personality-button {
+  background: linear-gradient(135deg, #5D4037 0%, #6D4C41 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  margin-left: auto;
+  box-shadow: 0 4px 12px rgba(93, 64, 55, 0.3);
+}
+
+.generate-personality-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6D4C41 0%, #5D4037 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(93, 64, 55, 0.4);
+}
+
+.generate-personality-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.personality-description {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #5D4037;
+}
+
+.personality-description p {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
 /* Washrooms Visited Section */
 .washrooms-visited-section {
   background: white;

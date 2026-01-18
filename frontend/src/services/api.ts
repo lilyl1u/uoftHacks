@@ -55,6 +55,14 @@ export const userService = {
     const response = await api.get('/users/top', { params: { limit } });
     return response.data.users;
   },
+  generatePersonality: async (userId: number) => {
+    const response = await api.post(`/users/${userId}/personality/generate`);
+    return response.data;
+  },
+  getPersonalityDescription: async (personalityType: string) => {
+    const response = await api.get(`/users/personality/${encodeURIComponent(personalityType)}`);
+    return response.data;
+  },
 };
 
 export const washroomService = {

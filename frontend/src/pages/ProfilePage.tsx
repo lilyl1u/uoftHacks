@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { userService, reviewService, friendsService } from '../services/api';
 import FriendsList from '../components/FriendsList';
@@ -118,7 +118,6 @@ const getBadgeInfo = (badgeName: string): BadgeInfo | undefined => {
 const ProfilePage = () => {
   const { user } = useAuth();
   const { userId } = useParams<{ userId?: string }>();
-  const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [personality, setPersonality] = useState('');
@@ -138,6 +137,9 @@ const ProfilePage = () => {
   const [selectedVisitData, setSelectedVisitData] = useState<{ visit_count: number; overall_rating?: number | string | null } | null>(null);
   const [showWashroomModal, setShowWashroomModal] = useState(false);
   const [visitsToShow, setVisitsToShow] = useState(7);
+  const [personalityDescription, setPersonalityDescription] = useState<string | null>(null);
+  const [generatingPersonality, setGeneratingPersonality] = useState(false);
+  const [hasAttemptedGeneration, setHasAttemptedGeneration] = useState(false);
 
   const viewingUserId = userId ? parseInt(userId) : user?.id;
   const isOwnProfile = !userId || viewingUserId === user?.id;
@@ -164,8 +166,30 @@ const ProfilePage = () => {
       }
       // Reset visits display when profile changes
       setVisitsToShow(7);
+      // Reset generation attempt flag when profile changes
+      setHasAttemptedGeneration(false);
     }
   }, [user, viewingUserId, isOwnProfile]);
+
+  useEffect(() => {
+    // Auto-generate personality for own profile if not set, or load description if set
+    if (profile && isOwnProfile && !hasAttemptedGeneration) {
+      if (!profile.personality_type) {
+        // Auto-generate if no personality exists
+        setHasAttemptedGeneration(true);
+        handleGeneratePersonality();
+      } else {
+        // Load description if personality exists
+        setHasAttemptedGeneration(true);
+        loadPersonalityDescription(profile.personality_type);
+      }
+    } else if (profile?.personality_type && !personalityDescription) {
+      // Load description for other users' profiles or if description not loaded yet
+      loadPersonalityDescription(profile.personality_type);
+    } else if (!profile?.personality_type) {
+      setPersonalityDescription(null);
+    }
+  }, [profile?.personality_type, profile, isOwnProfile, hasAttemptedGeneration]);
 
   const loadProfile = async () => {
     if (!user || !viewingUserId) return;
@@ -201,6 +225,31 @@ const ProfilePage = () => {
       console.error('Failed to load friendship status:', error);
     } finally {
       setFriendshipLoading(false);
+    }
+  };
+
+  const loadPersonalityDescription = async (personalityType: string) => {
+    try {
+      const data = await userService.getPersonalityDescription(personalityType);
+      setPersonalityDescription(data.description);
+    } catch (error) {
+      console.error('Failed to load personality description:', error);
+    }
+  };
+
+  const handleGeneratePersonality = async () => {
+    if (!user || !viewingUserId) return;
+    try {
+      setGeneratingPersonality(true);
+      const data = await userService.generatePersonality(viewingUserId);
+      setPersonalityDescription(data.description);
+      // Reload profile to get updated personality_type
+      await loadProfile();
+    } catch (error: any) {
+      console.error('Failed to generate personality:', error);
+      alert(error.response?.data?.error || 'Failed to generate personality. Please try again.');
+    } finally {
+      setGeneratingPersonality(false);
     }
   };
 
@@ -450,7 +499,7 @@ const ProfilePage = () => {
         <div className="personality-content">
           <span className="personality-label">Personality:</span>
           <span className="personality-display">
-            {profile.personality_type || 'Not set'}
+            {generatingPersonality ? 'Analyzing...' : (profile.personality_type || 'Analyzing...')}
           </span>
         </div>
       </div>
@@ -648,7 +697,7 @@ const ProfilePage = () => {
               className="personality-select"
             >
               <option value="">Select personality...</option>
-              <option value="Heavy Shitter">Heavy Shitter</option>
+              <option value="Heavy Launcher">Heavy Launcher</option>
               <option value="Morning Pooper">Morning Pooper</option>
               <option value="Night Owl">Night Owl</option>
               <option value="Explorer">Explorer</option>
@@ -774,6 +823,19 @@ const ProfilePage = () => {
                 <div className="wrapped-icon">📅</div>
                 <h3>Most Recent Visit</h3>
                 <p className="wrapped-value">{wrappedData.mostRecentVisit}</p>
+              </div>
+            )}
+
+            {profile.personality_type && (
+              <div className="wrapped-stat wrapped-stat-6">
+                <div className="wrapped-icon">🎭</div>
+                <h3>Your Personality</h3>
+                <p className="wrapped-value">{profile.personality_type}</p>
+                {personalityDescription && (
+                  <p className="wrapped-detail" style={{ marginTop: '0.75rem', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                    {personalityDescription}
+                  </p>
+                )}
               </div>
             )}
 
