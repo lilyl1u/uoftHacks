@@ -30,6 +30,7 @@ const RatingModal: React.FC<RatingModalProps> = ({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,12 +47,13 @@ const RatingModal: React.FC<RatingModalProps> = ({
         comment: comment || null,
         toiletries_available: toiletries,
       });
-      onSubmit();
-      onClose();
+      setShowSuccess(true);
+      setLoading(false);
+      // Don't call onSubmit() here - it closes the modal immediately
+      // We'll call it when the success modal is closed
     } catch (err: any) {
       console.error('Review submission error:', err);
       setError(err.response?.data?.error || err.message || 'Failed to submit review');
-    } finally {
       setLoading(false);
     }
   };
@@ -84,15 +86,35 @@ const RatingModal: React.FC<RatingModalProps> = ({
   );
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Rate {washroom.name}</h2>
-          {washroom.building && <p>{washroom.building}</p>}
+    <>
+      {showSuccess && (
+        <div className="modal-overlay" onClick={() => {
+          onSubmit(); // Call onSubmit when closing success modal
+          onClose();
+        }}>
+          <div className="success-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-success-modal" onClick={() => {
+              onSubmit(); // Call onSubmit when closing success modal
+              onClose();
+            }}>✕</button>
+            <div className="success-modal-content">
+              <div className="success-icon-large">✓</div>
+              <h2>Review Submitted!</h2>
+              <p>Thank you for your feedback</p>
+            </div>
+          </div>
         </div>
+      )}
+      {!showSuccess && (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>Rate {washroom.name}</h2>
+            {washroom.building && <p>{washroom.building}</p>}
+          </div>
 
-        <form onSubmit={handleSubmit}>
-          {error && <div className="error-message">{error}</div>}
+          <form onSubmit={handleSubmit}>
+            {error && <div className="error-message">{error}</div>}
 
           <StarRating
             value={cleanliness}
@@ -178,6 +200,8 @@ const RatingModal: React.FC<RatingModalProps> = ({
         </form>
       </div>
     </div>
+      )}
+    </>
   );
 };
 
