@@ -10,6 +10,7 @@ interface Washroom {
   floor: number | null;
   average_rating: number | string | null;
   total_reviews: number;
+  gender_type?: 'Men' | 'Women' | 'Gender Neutral';
 }
 
 interface Review {

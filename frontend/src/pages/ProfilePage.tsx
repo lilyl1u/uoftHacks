@@ -716,7 +716,6 @@ const ProfilePage = () => {
                       )}
                     </div>
                     <div className="visit-stats">
-                      <span>You visited {visit.visit_count} {visit.visit_count === 1 ? 'time' : 'times'}</span>
                       <span className="visit-date">
                         {new Date(visit.last_visited).toLocaleDateString()}
                       </span>
