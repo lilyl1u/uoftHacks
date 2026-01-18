@@ -13,10 +13,14 @@ interface UserProfile {
   id: number;
   username: string;
   email?: string;
+  first_name?: string;
+  last_name?: string;
+  bio?: string;
   avatar: string | null;
   personality_type: string | null;
   badges: string[] | null;
   washrooms_visited: number;
+  friends_count?: number;
   washroom_visits?: Array<{
     id: number;
     name: string;
@@ -90,22 +94,6 @@ const getAllBadges = (): BadgeInfo[] => {
       description: 'Left 5+ reviews',
       requirement: 'Write 5 reviews',
       earned: false
-    },
-    {
-      name: 'Early Bird',
-      icon: '🌅',
-      color: '#FFE66D',
-      description: 'Morning Pooper personality',
-      requirement: 'Set your personality type to "Morning Pooper"',
-      earned: false
-    },
-    {
-      name: 'Night Owl',
-      icon: '🌙',
-      color: '#5F27CD',
-      description: 'Night Owl personality',
-      requirement: 'Set your personality type to "Night Owl"',
-      earned: false
     }
   ];
 };
@@ -126,7 +114,13 @@ const ProfilePage = () => {
   const [showWrappedModal, setShowWrappedModal] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<BadgeInfo | null>(null);
-  const [editData, setEditData] = useState({ username: '', email: '', avatar: '' });
+  const [editData, setEditData] = useState({ 
+    first_name: '', 
+    last_name: '', 
+    email: '', 
+    bio: '', 
+    avatar: '' 
+  });
   const [reviews, setReviews] = useState<Review[]>([]);
   const [wrappedData, setWrappedData] = useState<any>(null);
   const [isFriend, setIsFriend] = useState(false);
@@ -144,6 +138,7 @@ const ProfilePage = () => {
   const [doctorAnalysis, setDoctorAnalysis] = useState<any>(null);
   const [loadingDoctorAnalysis, setLoadingDoctorAnalysis] = useState(false);
   const [doctorError, setDoctorError] = useState<string | null>(null);
+  const [friendsCount, setFriendsCount] = useState(0);
 
   const viewingUserId = userId ? parseInt(userId) : user?.id;
   const isOwnProfile = !userId || viewingUserId === user?.id;
@@ -165,6 +160,7 @@ const ProfilePage = () => {
   useEffect(() => {
     if (user && viewingUserId) {
       loadProfile();
+      loadFriendsCount();
       if (!isOwnProfile) {
         loadFriendshipStatus();
       }
@@ -203,7 +199,13 @@ const ProfilePage = () => {
       setProfile(data);
       
       if (!data.isLimited) {
-        setEditData({ username: data.username, email: data.email || '', avatar: data.avatar || '' });
+        setEditData({ 
+          first_name: data.first_name || '', 
+          last_name: data.last_name || '', 
+          email: data.email || '', 
+          bio: data.bio || '', 
+          avatar: data.avatar || '' 
+        });
         setPersonality(data.personality_type || '');
         
         // Load user reviews only for full profiles
@@ -216,6 +218,17 @@ const ProfilePage = () => {
       console.error('Failed to load profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadFriendsCount = async () => {
+    if (!viewingUserId) return;
+    try {
+      const friends = await friendsService.getFriends(viewingUserId);
+      setFriendsCount(friends?.length || 0);
+    } catch (error) {
+      console.error('Failed to load friends count:', error);
+      setFriendsCount(0);
     }
   };
 
@@ -344,14 +357,16 @@ const ProfilePage = () => {
     if (!user) return;
     try {
       await userService.updateProfile(user.id, {
-        username: editData.username,
-        email: editData.email,
+        first_name: editData.first_name,
+        last_name: editData.last_name,
+        bio: editData.bio,
         avatar: editData.avatar
       });
       setProfile((prev) => prev ? {
         ...prev,
-        username: editData.username,
-        email: editData.email,
+        first_name: editData.first_name,
+        last_name: editData.last_name,
+        bio: editData.bio,
         avatar: editData.avatar
       } : null);
       setShowEditModal(false);
@@ -461,7 +476,9 @@ const ProfilePage = () => {
               <img src={profile.avatar} alt="Avatar" />
             ) : (
               <div className="avatar-placeholder-large">
-                {profile.username.charAt(0).toUpperCase()}
+                {((profile.first_name && profile.first_name.charAt(0)) || 
+                  (profile.last_name && profile.last_name.charAt(0)) || 
+                  profile.username.charAt(0)).toUpperCase()}
               </div>
             )}
           </div>
@@ -475,17 +492,15 @@ const ProfilePage = () => {
           )}
         </div>
         <div className="user-info-right">
-          <div className="user-info-row">
-            <div className="user-info-item">
-              <span className="user-info-label">Name:</span>
-              <span className="user-info-value">{profile.username}</span>
-            </div>
-          </div>
-          <div className="user-info-row">
-            <div className="user-info-item">
-              <span className="user-info-label">Email:</span>
-              <span className="user-info-value">{profile.email || 'Not set'}</span>
-            </div>
+          <h2 className="profile-name">
+            {(profile.first_name || profile.last_name) 
+              ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+              : profile.username}
+          </h2>
+          <div className="bio-box">
+            <p className="bio-text">
+              {profile.bio || 'Enter bio'}
+            </p>
           </div>
         </div>
         <div className="user-info-buttons">
@@ -517,13 +532,12 @@ const ProfilePage = () => {
             onClick={() => setShowFriendsModal(true)}
             className="friends-button"
           >
-            Friends
+            {friendsCount} friends
           </button>
           {isOwnProfile && (
             <button
               onClick={() => setShowUserSearch(true)}
               className="friends-button"
-              style={{ marginLeft: '0.5rem' }}
             >
               Search Users
             </button>
@@ -574,7 +588,7 @@ const ProfilePage = () => {
         </div>
 
         <div className="badges-section">
-          <h2 className="badges-header">Badges ({(profile.badges?.length || 0) + (profile.washrooms_visited >= 1 ? 1 : 0)})</h2>
+          <h2 className="badges-header">Badges</h2>
           <div className="badges-row">
             {isOwnProfile ? (
               // Show all badges (earned and locked) for own profile
@@ -593,10 +607,6 @@ const ProfilePage = () => {
                   earned = profile.washrooms_visited >= 20 || earnedBadges.includes('Elite');
                 } else if (badge.name === 'Reviewer') {
                   earned = reviews.length >= 5 || earnedBadges.includes('Reviewer');
-                } else if (badge.name === 'Early Bird') {
-                  earned = profile.personality_type === 'Morning Pooper' || earnedBadges.includes('Early Bird');
-                } else if (badge.name === 'Night Owl') {
-                  earned = profile.personality_type === 'Night Owl' || earnedBadges.includes('Night Owl');
                 } else {
                   earned = earnedBadges.includes(badge.name);
                 }
@@ -784,11 +794,20 @@ const ProfilePage = () => {
             <h2>Edit Profile</h2>
             <div className="edit-form">
               <div className="form-group">
-                <label>Username</label>
+                <label>First Name</label>
                 <input
                   type="text"
-                  value={editData.username}
-                  onChange={(e) => setEditData({ ...editData, username: e.target.value })}
+                  value={editData.first_name}
+                  onChange={(e) => setEditData({ ...editData, first_name: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Last Name</label>
+                <input
+                  type="text"
+                  value={editData.last_name}
+                  onChange={(e) => setEditData({ ...editData, last_name: e.target.value })}
                   className="form-input"
                 />
               </div>
@@ -796,9 +815,21 @@ const ProfilePage = () => {
                 <label>Email</label>
                 <input
                   type="email"
-                  value={editData.email}
-                  onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                  value={profile.username}  // Backend returns email in username field
+                  disabled
                   className="form-input"
+                  style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                  title="Email cannot be changed"
+                />
+              </div>
+              <div className="form-group">
+                <label>Bio</label>
+                <textarea
+                  value={editData.bio}
+                  onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
+                  className="form-input"
+                  rows={3}
+                  placeholder="Tell us about yourself..."
                 />
               </div>
               <div className="form-group">
