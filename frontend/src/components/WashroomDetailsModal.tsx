@@ -59,12 +59,17 @@ interface WashroomDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   washroomId: number;
+  visitData?: {
+    visit_count: number;
+    overall_rating?: number | string | null;
+  } | null;
 }
 
 const WashroomDetailsModal: React.FC<WashroomDetailsModalProps> = ({
   isOpen,
   onClose,
   washroomId,
+  visitData,
 }) => {
   const { user } = useAuth();
   const [washroom, setWashroom] = useState<Washroom | null>(null);
@@ -301,6 +306,29 @@ const WashroomDetailsModal: React.FC<WashroomDetailsModalProps> = ({
               </MapContainer>
             </div>
           </div>
+
+          {/* User Visit Info Section (for own profile) */}
+          {visitData && (
+            <div className="user-visit-info-section">
+              <div className="visit-info-card">
+                <div className="visit-info-item">
+                  <span className="visit-info-label">You visited</span>
+                  <span className="visit-info-value">{visitData.visit_count} {visitData.visit_count === 1 ? 'time' : 'times'}</span>
+                </div>
+                {visitData.overall_rating && (
+                  <div className="visit-info-item">
+                    <span className="visit-info-label">Your Rating</span>
+                    <span 
+                      className="visit-info-value"
+                      style={{ color: getRatingColor(getRating(visitData.overall_rating)) }}
+                    >
+                      ⭐ {getRating(visitData.overall_rating).toFixed(1)}/5.0
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Average Rating Section */}
           <div className="washroom-rating-section">

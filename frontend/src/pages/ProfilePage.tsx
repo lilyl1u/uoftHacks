@@ -6,6 +6,7 @@ import FriendsList from '../components/FriendsList';
 import UserSearch from '../components/UserSearch';
 import ChampionBoard from '../components/ChampionBoard';
 import WashroomDetailsModal from '../components/WashroomDetailsModal';
+import RecentPosts from '../components/RecentPosts';
 import './ProfilePage.css';
 
 interface UserProfile {
@@ -115,6 +116,7 @@ const ProfilePage = () => {
   const [followLoading, setFollowLoading] = useState(false);
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [selectedWashroomId, setSelectedWashroomId] = useState<number | null>(null);
+  const [selectedVisitData, setSelectedVisitData] = useState<{ visit_count: number; overall_rating?: number | string | null } | null>(null);
   const [showWashroomModal, setShowWashroomModal] = useState(false);
   const [visitsToShow, setVisitsToShow] = useState(7);
 
@@ -481,61 +483,76 @@ const ProfilePage = () => {
       </div>
 
 
-      {/* Recent Visits Section */}
-      <div className="recent-visits-section">
-        <h2 className="recent-visits-header">Recent Visits</h2>
-        {profile.washroom_visits && profile.washroom_visits.length > 0 ? (
-          <>
-            <div className="visits-list">
-              {profile.washroom_visits.slice(0, visitsToShow).map((visit) => (
-                <div 
-                  key={visit.id} 
-                  className="visit-item"
-                  onClick={() => {
-                    setSelectedWashroomId(visit.id);
-                    setShowWashroomModal(true);
-                  }}
-                  style={{ cursor: 'pointer' }}
+      {/* Recent Visits & Champion Board Section (Side by Side) */}
+      <div className="visits-champion-container">
+        <div className="recent-visits-section">
+          <h2 className="recent-visits-header">Your Recent Visits</h2>
+          {profile.washroom_visits && profile.washroom_visits.length > 0 ? (
+            <>
+              <div className="visits-list">
+                {profile.washroom_visits.slice(0, visitsToShow).map((visit) => (
+                  <div 
+                    key={visit.id} 
+                    className="visit-item"
+                    onClick={() => {
+                      setSelectedWashroomId(visit.id);
+                      setSelectedVisitData({
+                        visit_count: visit.visit_count,
+                        overall_rating: visit.overall_rating,
+                      });
+                      setShowWashroomModal(true);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div>
+                      <h4>{visit.name}</h4>
+                      <p>{visit.building}</p>
+                      {visit.overall_rating && (
+                        <div className="visit-rating">
+                          <span className="visit-rating-label">Your Rating:</span>
+                          <span 
+                            className="visit-rating-value"
+                            style={{ 
+                              color: getRatingColor(getRating(visit.overall_rating))
+                            }}
+                          >
+                            ⭐ {getRating(visit.overall_rating).toFixed(1)}/5.0
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="visit-stats">
+                      <span>You visited {visit.visit_count} {visit.visit_count === 1 ? 'time' : 'times'}</span>
+                      <span className="visit-date">
+                        {new Date(visit.last_visited).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {profile.washroom_visits.length > visitsToShow && (
+                <button
+                  className="load-more-visits-button"
+                  onClick={() => setVisitsToShow(profile.washroom_visits!.length)}
                 >
-                  <div>
-                    <h4>{visit.name}</h4>
-                    <p>{visit.building}</p>
-                    {visit.overall_rating && (
-                      <div className="visit-rating">
-                        <span className="visit-rating-label">Your Rating:</span>
-                        <span 
-                          className="visit-rating-value"
-                          style={{ 
-                            color: getRatingColor(getRating(visit.overall_rating))
-                          }}
-                        >
-                          ⭐ {getRating(visit.overall_rating).toFixed(1)}/5.0
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="visit-stats">
-                    <span>Visited {visit.visit_count} time(s)</span>
-                    <span className="visit-date">
-                      {new Date(visit.last_visited).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {profile.washroom_visits.length > visitsToShow && (
-              <button
-                className="load-more-visits-button"
-                onClick={() => setVisitsToShow(profile.washroom_visits!.length)}
-              >
-                Load More ({profile.washroom_visits.length - visitsToShow} more)
-              </button>
-            )}
-          </>
-        ) : (
-          <p className="no-visits">No washroom visits yet</p>
-        )}
+                  Load More ({profile.washroom_visits.length - visitsToShow} more)
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="no-visits">No washroom visits yet</p>
+          )}
+        </div>
+
+        <div className="champion-board-section">
+          <ChampionBoard />
+        </div>
       </div>
+
+      {/* Recent Posts Section */}
+      {!profile.isLimited && (
+        <RecentPosts userId={viewingUserId || user?.id || 0} />
+      )}
 
       {showPersonalityModal && (
         <div className="modal-overlay" onClick={() => setShowPersonalityModal(false)}>
@@ -716,11 +733,6 @@ const ProfilePage = () => {
         </div>
       )}
 
-      {/* Champion Board - at bottom */}
-      <div style={{ marginTop: '2rem' }}>
-        <ChampionBoard />
-      </div>
-
       {/* Washroom Details Modal */}
       {selectedWashroomId && (
         <WashroomDetailsModal
@@ -728,8 +740,10 @@ const ProfilePage = () => {
           onClose={() => {
             setShowWashroomModal(false);
             setSelectedWashroomId(null);
+            setSelectedVisitData(null);
           }}
           washroomId={selectedWashroomId}
+          visitData={isOwnProfile ? selectedVisitData : undefined}
         />
       )}
     </div>

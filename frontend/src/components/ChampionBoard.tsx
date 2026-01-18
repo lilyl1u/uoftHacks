@@ -24,7 +24,7 @@ const ChampionBoard = () => {
   const loadTopUsers = async () => {
     try {
       setLoading(true);
-      const data = await userService.getTopUsers(5);
+      const data = await userService.getTopUsers(3);
       setTopUsers(data || []);
     } catch (error) {
       console.error('Failed to load top users:', error);
@@ -68,7 +68,7 @@ const ChampionBoard = () => {
   return (
     <div className="champion-board">
       <h2 className="champion-board-title">🏆 Champion Board</h2>
-      <p className="champion-board-subtitle">Top 5 Most Visited Users</p>
+      <p className="champion-board-subtitle">Top 3 Most Visited Users</p>
       <div className="champion-list">
         {topUsers.map((user, index) => {
           const position = index + 1;
