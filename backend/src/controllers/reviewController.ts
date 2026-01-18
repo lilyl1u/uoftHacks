@@ -183,11 +183,13 @@ export const getUserReviews = async (req: Request, res: Response) => {
         r.comment,
         r.created_at,
         w.name as washroom_name,
-        w.building
+        w.building,
+        uwv.last_visited
       FROM reviews r
       JOIN washrooms w ON r.washroom_id = w.id
+      INNER JOIN user_washroom_visits uwv ON uwv.user_id = r.user_id AND uwv.washroom_id = r.washroom_id
       WHERE r.user_id = $1
-      ORDER BY r.created_at DESC`,
+      ORDER BY uwv.last_visited DESC`,
       [userId]
     );
 
