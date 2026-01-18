@@ -141,4 +141,162 @@ const getPersonalityFallback = (visitData: UserVisitData): { personality: string
   return { personality: 'Campus Nomad', description: PERSONALITY_DESCRIPTIONS['Campus Nomad'] };
 };
 
+interface BowelMovementData {
+  visitTimestamps: string[]; // ISO date strings
+  totalVisits: number;
+  visitsPerWeek: number;
+  averageTimeBetweenVisits: number; // hours
+  consistencyScore: number; // 0-1, how regular the pattern is
+  timeOfDayDistribution: {
+    morning: number;
+    afternoon: number;
+    evening: number;
+    night: number;
+  };
+  dayOfWeekDistribution: {
+    monday: number;
+    tuesday: number;
+    wednesday: number;
+    thursday: number;
+    friday: number;
+    saturday: number;
+    sunday: number;
+  };
+}
+
+export const analyzeBowelHealth = async (movementData: BowelMovementData): Promise<{ 
+  regularity: 'regular' | 'irregular' | 'needs_attention';
+  analysis: string;
+  recommendations: string[];
+}> => {
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+    // Format timestamps for analysis
+    const timestampList = movementData.visitTimestamps
+      .slice(0, 50) // Limit to last 50 visits for prompt size
+      .map(ts => new Date(ts).toLocaleString())
+      .join('\n');
+
+    const prompt = `You are a health advisor analyzing bowel movement patterns. Analyze the following data and provide health recommendations.
+
+Bowel Movement Data:
+- Total visits recorded: ${movementData.totalVisits}
+- Average visits per week: ${movementData.visitsPerWeek.toFixed(1)}
+- Average time between visits: ${movementData.averageTimeBetweenVisits.toFixed(1)} hours
+- Consistency score: ${(movementData.consistencyScore * 100).toFixed(1)}% (higher = more regular pattern)
+
+Time of Day Distribution:
+- Morning (6am-12pm): ${movementData.timeOfDayDistribution.morning} visits
+- Afternoon (12pm-6pm): ${movementData.timeOfDayDistribution.afternoon} visits
+- Evening (6pm-10pm): ${movementData.timeOfDayDistribution.evening} visits
+- Night (10pm-6am): ${movementData.timeOfDayDistribution.night} visits
+
+Day of Week Distribution:
+- Monday: ${movementData.dayOfWeekDistribution.monday} visits
+- Tuesday: ${movementData.dayOfWeekDistribution.tuesday} visits
+- Wednesday: ${movementData.dayOfWeekDistribution.wednesday} visits
+- Thursday: ${movementData.dayOfWeekDistribution.thursday} visits
+- Friday: ${movementData.dayOfWeekDistribution.friday} visits
+- Saturday: ${movementData.dayOfWeekDistribution.saturday} visits
+- Sunday: ${movementData.dayOfWeekDistribution.sunday} visits
+
+Recent Visit Timestamps (last 50):
+${timestampList}
+
+Based on this data, determine:
+1. Regularity status: "regular" (consistent pattern, healthy), "irregular" (inconsistent but manageable), or "needs_attention" (highly irregular, may indicate issues)
+2. A brief analysis (2-3 sentences) explaining the pattern
+3. 3-5 specific, actionable recommendations to improve bowel health
+
+Consider:
+- Regular bowel movements typically occur 1-3 times per day or every other day
+- Consistency in timing suggests a healthy routine
+- Irregular patterns may indicate diet, hydration, or lifestyle issues
+- Very frequent visits (>5/day) or very infrequent (<3/week) may need attention
+
+Respond in JSON format:
+{
+  "regularity": "regular" | "irregular" | "needs_attention",
+  "analysis": "brief explanation of the pattern",
+  "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"]
+}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text().trim();
+    
+    // Try to parse JSON response
+    let parsed;
+    try {
+      // Remove markdown code blocks if present
+      const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      parsed = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error('Failed to parse Gemini response:', text);
+      // Fallback to simple analysis
+      return getBowelHealthFallback(movementData);
+    }
+
+    // Validate response structure
+    if (!parsed.regularity || !parsed.analysis || !Array.isArray(parsed.recommendations)) {
+      return getBowelHealthFallback(movementData);
+    }
+
+    return {
+      regularity: parsed.regularity as 'regular' | 'irregular' | 'needs_attention',
+      analysis: parsed.analysis,
+      recommendations: parsed.recommendations.slice(0, 5) // Limit to 5 recommendations
+    };
+  } catch (error) {
+    console.error('Gemini API error:', error);
+    return getBowelHealthFallback(movementData);
+  }
+};
+
+const getBowelHealthFallback = (movementData: BowelMovementData): { 
+  regularity: 'regular' | 'irregular' | 'needs_attention';
+  analysis: string;
+  recommendations: string[];
+} => {
+  const { visitsPerWeek, consistencyScore, averageTimeBetweenVisits } = movementData;
+  
+  let regularity: 'regular' | 'irregular' | 'needs_attention' = 'regular';
+  let analysis = '';
+  const recommendations: string[] = [];
+
+  // Determine regularity
+  if (visitsPerWeek < 3) {
+    regularity = 'needs_attention';
+    analysis = 'Your bowel movement frequency is lower than typical. This may indicate constipation or dietary issues.';
+    recommendations.push('Increase fiber intake through fruits, vegetables, and whole grains');
+    recommendations.push('Drink more water throughout the day (aim for 8+ glasses)');
+    recommendations.push('Consider adding more physical activity to your routine');
+  } else if (visitsPerWeek > 21) {
+    regularity = 'needs_attention';
+    analysis = 'Your bowel movement frequency is higher than typical. This may indicate digestive sensitivity or dietary triggers.';
+    recommendations.push('Keep a food diary to identify potential triggers');
+    recommendations.push('Consider reducing processed foods and artificial sweeteners');
+    recommendations.push('Consult with a healthcare provider if this persists');
+  } else if (consistencyScore < 0.5) {
+    regularity = 'irregular';
+    analysis = 'Your bowel movement pattern shows some inconsistency. Establishing a more regular routine could improve digestive health.';
+    recommendations.push('Try to establish a consistent daily routine');
+    recommendations.push('Eat meals at regular times');
+    recommendations.push('Create a relaxing bathroom routine');
+  } else {
+    regularity = 'regular';
+    analysis = 'Your bowel movement pattern appears regular and healthy. Keep up the good habits!';
+    recommendations.push('Maintain your current diet and hydration habits');
+    recommendations.push('Continue with regular physical activity');
+  }
+
+  // Add general recommendations
+  if (averageTimeBetweenVisits < 4) {
+    recommendations.push('Space out your meals to allow proper digestion');
+  }
+
+  return { regularity, analysis, recommendations };
+};
+
 export { PERSONALITY_DESCRIPTIONS, PERSONALITY_TYPES };

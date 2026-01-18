@@ -63,6 +63,10 @@ export const userService = {
     const response = await api.get(`/users/personality/${encodeURIComponent(personalityType)}`);
     return response.data;
   },
+  getBowelHealthAnalysis: async (userId: number) => {
+    const response = await api.get(`/users/${userId}/doctor`);
+    return response.data;
+  },
 };
 
 export const washroomService = {

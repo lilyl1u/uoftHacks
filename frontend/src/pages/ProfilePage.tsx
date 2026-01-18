@@ -140,6 +140,10 @@ const ProfilePage = () => {
   const [personalityDescription, setPersonalityDescription] = useState<string | null>(null);
   const [generatingPersonality, setGeneratingPersonality] = useState(false);
   const [hasAttemptedGeneration, setHasAttemptedGeneration] = useState(false);
+  const [showDoctorModal, setShowDoctorModal] = useState(false);
+  const [doctorAnalysis, setDoctorAnalysis] = useState<any>(null);
+  const [loadingDoctorAnalysis, setLoadingDoctorAnalysis] = useState(false);
+  const [doctorError, setDoctorError] = useState<string | null>(null);
 
   const viewingUserId = userId ? parseInt(userId) : user?.id;
   const isOwnProfile = !userId || viewingUserId === user?.id;
@@ -250,6 +254,48 @@ const ProfilePage = () => {
       alert(error.response?.data?.error || 'Failed to generate personality. Please try again.');
     } finally {
       setGeneratingPersonality(false);
+    }
+  };
+
+  const loadDoctorAnalysis = async () => {
+    if (!user || !isOwnProfile) return;
+    try {
+      setLoadingDoctorAnalysis(true);
+      setDoctorError(null);
+      const data = await userService.getBowelHealthAnalysis(user.id);
+      setDoctorAnalysis(data);
+      setShowDoctorModal(true);
+    } catch (err: any) {
+      console.error('Failed to load health analysis:', err);
+      setDoctorError(err.response?.data?.error || 'Failed to load health analysis. Please try again.');
+    } finally {
+      setLoadingDoctorAnalysis(false);
+    }
+  };
+
+  const getRegularityColor = (regularity: string) => {
+    switch (regularity) {
+      case 'regular':
+        return '#2ECC71';
+      case 'irregular':
+        return '#F39C12';
+      case 'needs_attention':
+        return '#E74C3C';
+      default:
+        return '#95a5a6';
+    }
+  };
+
+  const getRegularityLabel = (regularity: string) => {
+    switch (regularity) {
+      case 'regular':
+        return 'Regular';
+      case 'irregular':
+        return 'Irregular';
+      case 'needs_attention':
+        return 'Needs Attention';
+      default:
+        return 'Unknown';
     }
   };
 
@@ -504,11 +550,27 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      {/* Washrooms Visited & Badges Section */}
-      <div className="badges-and-wrapped-container">
-        <div className="washrooms-visited-section">
-          <h2 className="washrooms-visited-header">Washrooms Visited</h2>
-          <div className="washrooms-visited-count">{profile.washrooms_visited}</div>
+      {/* Washrooms Visited & Badges Section - Separate, aligned at top */}
+      <div className="washrooms-badges-container">
+        <div className="left-column">
+          <div className="washrooms-visited-section">
+            <h2 className="washrooms-visited-header">Washrooms Visited</h2>
+            <div className="washrooms-visited-count">{profile.washrooms_visited}</div>
+          </div>
+
+          {/* Doctor Section - Only show on own profile, positioned below washrooms visited */}
+          {isOwnProfile && (
+            <div className="doctor-section-card">
+              <h2 className="doctor-section-header">🩺 Health Analysis</h2>
+              <button 
+                onClick={loadDoctorAnalysis}
+                disabled={loadingDoctorAnalysis}
+                className="doctor-section-button"
+              >
+                {loadingDoctorAnalysis ? 'Analyzing...' : 'View Analysis'}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="badges-section">
@@ -614,7 +676,6 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
-
 
       {/* Recent Visits & Champion Board Section (Side by Side) */}
       <div className="visits-champion-container">
@@ -906,6 +967,85 @@ const ProfilePage = () => {
           washroomId={selectedWashroomId}
           visitData={isOwnProfile ? selectedVisitData : undefined}
         />
+      )}
+
+      {/* Doctor Modal */}
+      {showDoctorModal && (
+        <div className="modal-overlay" onClick={() => setShowDoctorModal(false)}>
+          <div className="doctor-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowDoctorModal(false)}>✕</button>
+            <h2>🩺 iPoo Doctor</h2>
+            <p className="doctor-modal-subtitle">Your personalized bowel health analysis</p>
+
+            {doctorError ? (
+              <div className="doctor-error">
+                <p>{doctorError}</p>
+                <button onClick={loadDoctorAnalysis} className="doctor-retry-button">
+                  Try Again
+                </button>
+              </div>
+            ) : doctorAnalysis ? (
+              <>
+                {/* Regularity Status */}
+                <div className="doctor-regularity-card">
+                  <div className="doctor-regularity-header">
+                    <h3>Regularity Status</h3>
+                    <span 
+                      className="doctor-regularity-badge"
+                      style={{ backgroundColor: getRegularityColor(doctorAnalysis.regularity) }}
+                    >
+                      {getRegularityLabel(doctorAnalysis.regularity)}
+                    </span>
+                  </div>
+                  <p className="doctor-regularity-analysis">{doctorAnalysis.analysis}</p>
+                </div>
+
+                {/* Statistics */}
+                <div className="doctor-statistics-grid">
+                  <div className="doctor-stat-card">
+                    <div className="doctor-stat-icon">📊</div>
+                    <div className="doctor-stat-label">Total Visits</div>
+                    <div className="doctor-stat-value">{doctorAnalysis.statistics.totalVisits}</div>
+                  </div>
+                  <div className="doctor-stat-card">
+                    <div className="doctor-stat-icon">📅</div>
+                    <div className="doctor-stat-label">Visits/Week</div>
+                    <div className="doctor-stat-value">{doctorAnalysis.statistics.visitsPerWeek}</div>
+                  </div>
+                  <div className="doctor-stat-card">
+                    <div className="doctor-stat-icon">⏱️</div>
+                    <div className="doctor-stat-label">Avg Between</div>
+                    <div className="doctor-stat-value">{doctorAnalysis.statistics.averageTimeBetweenVisits}h</div>
+                  </div>
+                  <div className="doctor-stat-card">
+                    <div className="doctor-stat-icon">📈</div>
+                    <div className="doctor-stat-label">Consistency</div>
+                    <div className="doctor-stat-value">{doctorAnalysis.statistics.consistencyScore}%</div>
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                <div className="doctor-recommendations-card">
+                  <h3>💡 Recommendations</h3>
+                  <ul className="doctor-recommendations-list">
+                    {doctorAnalysis.recommendations.map((rec: string, index: number) => (
+                      <li key={index} className="doctor-recommendation-item">
+                        <span className="doctor-recommendation-number">{index + 1}</span>
+                        <span className="doctor-recommendation-text">{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="doctor-disclaimer">
+                  ⚠️ This analysis is for informational purposes only and is not a substitute for professional medical advice.
+                </div>
+              </>
+            ) : (
+              <div className="doctor-loading">Analyzing your bowel movement patterns...</div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

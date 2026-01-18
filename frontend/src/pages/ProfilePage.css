@@ -325,7 +325,6 @@
   justify-content: flex-start;
   gap: 0.5rem;
   flex: 1;
-  min-height: 180px;
 }
 
 .washrooms-visited-header {
@@ -342,13 +341,20 @@
   color: #2c3e50;
 }
 
-/* Badges Section */
-.badges-and-wrapped-container {
+/* Washrooms Visited & Badges Container - Separate, aligned at top */
+.washrooms-badges-container {
   display: flex;
   gap: 2rem;
   align-items: flex-start;
   margin-bottom: 2rem;
   width: 100%;
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
 }
 
 .badges-section {
@@ -357,7 +363,6 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   flex: 1;
-  min-height: 180px;
 }
 
 .badges-header {
@@ -1093,9 +1098,13 @@
     font-size: 2rem;
   }
 
-  .badges-and-wrapped-container {
+  .washrooms-badges-container {
     flex-direction: column;
     align-items: center;
+  }
+
+  .left-column {
+    width: 100%;
   }
 
   .view-wrapped-button {
@@ -1110,5 +1119,299 @@
 
   .wrapped-header h1 {
     font-size: 2rem;
+  }
+}
+
+/* Doctor Section */
+.doctor-section-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 1rem;
+  width: 100%;
+}
+
+.doctor-section-header {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.doctor-section-button {
+  background: linear-gradient(135deg, #5D4037 0%, #6D4C41 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(93, 64, 55, 0.3);
+  margin-top: auto;
+}
+
+.doctor-section-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6D4C41 0%, #5D4037 100%);
+  box-shadow: 0 6px 16px rgba(93, 64, 55, 0.4);
+  transform: translateY(-2px);
+}
+
+.doctor-section-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Doctor Modal */
+.doctor-modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 
+    inset 0 0 0 8px #5D4037,
+    inset 0 0 0 10px #8D6E63,
+    inset 0 0 0 12px #3E2723,
+    0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.doctor-modal-content h2 {
+  font-size: 2rem;
+  color: #3E2723;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.doctor-modal-subtitle {
+  text-align: center;
+  color: #6D4C41;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.doctor-loading {
+  text-align: center;
+  padding: 2rem;
+  color: #6D4C41;
+  font-size: 1.1rem;
+}
+
+.doctor-error {
+  text-align: center;
+  padding: 1.5rem;
+  background: #FFEBEE;
+  border-radius: 8px;
+  color: #E74C3C;
+  margin-bottom: 1rem;
+}
+
+.doctor-retry-button {
+  background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: all 0.3s ease;
+}
+
+.doctor-retry-button:hover {
+  background: linear-gradient(135deg, #0D47A1 0%, #0A3D91 100%);
+  transform: translateY(-2px);
+}
+
+.doctor-regularity-card {
+  background: linear-gradient(135deg, #EFEBE9 0%, #D7CCC8 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 2px solid #8D6E63;
+}
+
+.doctor-regularity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.doctor-regularity-header h3 {
+  font-size: 1.3rem;
+  color: #3E2723;
+  margin: 0;
+}
+
+.doctor-regularity-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.doctor-regularity-analysis {
+  font-size: 1rem;
+  color: #5D4037;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.doctor-statistics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.doctor-stat-card {
+  background: white;
+  border: 2px solid #8D6E63;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.doctor-stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.doctor-stat-label {
+  font-size: 0.85rem;
+  color: #6D4C41;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.doctor-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #3E2723;
+}
+
+.doctor-recommendations-card {
+  background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 2px solid #5D4037;
+}
+
+.doctor-recommendations-card h3 {
+  font-size: 1.3rem;
+  color: #3E2723;
+  margin-bottom: 1rem;
+}
+
+.doctor-recommendations-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.doctor-recommendation-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border-left: 4px solid #1565C0;
+}
+
+.doctor-recommendation-item:last-child {
+  margin-bottom: 0;
+}
+
+.doctor-recommendation-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #1565C0;
+  color: white;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.doctor-recommendation-text {
+  flex: 1;
+  color: #3E2723;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.doctor-disclaimer {
+  font-size: 0.8rem;
+  color: #6D4C41;
+  line-height: 1.4;
+  padding: 1rem;
+  background: #FFF3E0;
+  border-radius: 8px;
+  border-left: 4px solid #F39C12;
+  text-align: center;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6D4C41;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: #EFEBE9;
+  color: #3E2723;
+}
+
+@media (max-width: 768px) {
+  .doctor-statistics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-modal-content {
+    padding: 1.5rem;
+    max-width: 95%;
+  }
+
+  .doctor-modal-content h2 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .doctor-section-card {
+    width: 100%;
   }
 }

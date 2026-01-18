@@ -5,6 +5,7 @@ import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
 import MapPage from './pages/MapPage';
 import ExplorePage from './pages/ExplorePage';
+import DoctorPage from './pages/DoctorPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
@@ -28,6 +29,7 @@ function App() {
           <Route path="map" element={<MapPage />} />
           <Route path="profile/:userId?" element={<ProfilePage />} />
           <Route path="explore" element={<ExplorePage />} />
+          <Route path="doctor" element={<DoctorPage />} />
         </Route>
       </Routes>
     </AuthProvider>
