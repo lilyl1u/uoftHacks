@@ -59,7 +59,7 @@ interface Washroom {
 type Campus = 'UofT' | 'Waterloo';
 
 const MapPage = () => {
-  const { isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const [washrooms, setWashrooms] = useState<Washroom[]>([]);
   const [selectedWashroom, setSelectedWashroom] = useState<Washroom | null>(null);
   const [showReviewsListModal, setShowReviewsListModal] = useState(false);
@@ -198,7 +198,7 @@ const MapPage = () => {
       setError(null);
     } catch (err: any) {
       if (err.response?.status === 403) {
-        setError('You do not have permission to add washrooms. Admin access required.');
+        setError('You do not have permission to add washrooms.');
       } else {
         setError('Failed to add washroom');
       }
@@ -271,14 +271,16 @@ const MapPage = () => {
             </select>
           </h1>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button onClick={handleAddReviewClick} className="add-button" style={{ background: '#27ae60' }}>
-            + Add Review
-          </button>
-          {isAdmin() && (
-            <button onClick={() => setShowAddModal(true)} className="add-button">
-              + Add Washroom
-            </button>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {isAuthenticated && (
+            <>
+              <button onClick={handleAddReviewClick} className="add-button" style={{ background: '#27ae60' }}>
+                + Add Review
+              </button>
+              <button onClick={() => setShowAddModal(true)} className="add-button">
+                + Add Washroom
+              </button>
+            </>
           )}
         </div>
       </div>

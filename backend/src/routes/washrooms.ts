@@ -16,7 +16,7 @@ const router = express.Router();
 router.get('/', getAllWashrooms);
 router.get('/top-visited', getTopVisitedWashrooms);
 router.get('/:id', getWashroomById);
-router.post('/', authenticateToken, requireRole(['admin']), createWashroom);
+router.post('/', authenticateToken, createWashroom);
 router.put('/:id', authenticateToken, requireRole(['admin']), updateWashroom);
 router.delete('/:id', authenticateToken, requireRole(['admin']), deleteWashroom);
 router.get('/location/nearby', getWashroomsByLocation);

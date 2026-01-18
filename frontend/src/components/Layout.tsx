@@ -3,12 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import './Layout.css';
 
 const Layout = () => {
-  const { user, logout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/app/map');
   };
 
   return (
@@ -19,18 +19,29 @@ const Layout = () => {
             🚽 iPoo
           </Link>
           <div className="nav-links">
-            <Link to="/app/map" className="nav-link">
-              Map
-            </Link>
-            <Link to="/app/profile" className="nav-link">
-              Profile
-            </Link>
-            <Link to="/app/explore" className="nav-link">
-              Explore
-            </Link>
-            <button onClick={handleLogout} className="nav-button">
-              Logout
-            </button>
+            {isAuthenticated ? (
+              <>
+                <Link to="/app/map" className="nav-link">
+                  Map
+                </Link>
+                <Link to="/app/profile" className="nav-link">
+                  Profile
+                </Link>
+                <Link to="/app/explore" className="nav-link">
+                  Explore
+                </Link>
+                <button onClick={handleLogout} className="nav-button">
+                  Logout
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={() => navigate('/login')}
+                className="nav-button"
+              >
+                Log In
+              </button>
+            )}
           </div>
         </div>
       </nav>

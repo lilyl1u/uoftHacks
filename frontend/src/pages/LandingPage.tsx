@@ -7,11 +7,7 @@ const LandingPage = () => {
   const { user } = useAuth();
 
   const handleMapClick = () => {
-    if (user) {
-      navigate('/app/map');
-    } else {
-      navigate('/login');
-    }
+    navigate('/app/map');
   };
 
   const handleLoginClick = () => {
