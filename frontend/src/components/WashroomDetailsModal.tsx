@@ -91,6 +91,7 @@ const WashroomDetailsModal: React.FC<WashroomDetailsModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
+<<<<<<< HEAD
       <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
           <div>
@@ -100,6 +101,202 @@ const WashroomDetailsModal: React.FC<WashroomDetailsModalProps> = ({
                 {washroom.building}
                 {washroom.floor !== null && ` - Floor ${washroom.floor}`}
               </p>
+=======
+      <div className="washroom-details-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="close-button" onClick={onClose}>✕</button>
+        
+        <div className="washroom-details-header">
+          <h2>{washroom.name}</h2>
+          <p className="washroom-building">
+            {washroom.building}
+            {washroom.floor !== null && ` • Floor ${washroom.floor}`}
+            {washroom.campus && ` • ${washroom.campus}`}
+          </p>
+        </div>
+
+        <div className="washroom-details-content">
+          {/* Map Section */}
+          <div className="washroom-map-section">
+            <h3>Location</h3>
+            <div className="map-container-details">
+              <MapContainer
+                key={`map-${washroomId}`}
+                center={[washroom.latitude, washroom.longitude]}
+                zoom={17}
+                style={{ height: '300px', width: '100%', borderRadius: '8px' }}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                <Marker
+                  position={[washroom.latitude, washroom.longitude]}
+                  icon={new Icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41],
+                  })}
+                >
+                  <Popup>{washroom.name}</Popup>
+                </Marker>
+              </MapContainer>
+            </div>
+          </div>
+
+          {/* User Visit Info Section (for own profile) */}
+          {visitData && (
+            <div className="user-visit-info-section">
+              <div className="visit-info-card">
+                <div className="visit-info-item">
+                  <span className="visit-info-label">You visited</span>
+                  <span className="visit-info-value">{visitData.visit_count} {visitData.visit_count === 1 ? 'time' : 'times'}</span>
+                </div>
+                {visitData.overall_rating && (
+                  <div className="visit-info-item">
+                    <span className="visit-info-label">Your Rating</span>
+                    <span 
+                      className="visit-info-value"
+                      style={{ color: getRatingColor(getRating(visitData.overall_rating)) }}
+                    >
+                      ⭐ {getRating(visitData.overall_rating).toFixed(1)}/5.0
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Average Rating Section */}
+          <div className="washroom-rating-section">
+            <h3>Average Rating</h3>
+            <div className="rating-display" style={{ borderLeftColor: ratingColor }}>
+              <div className="rating-value" style={{ color: ratingColor }}>
+                {rating > 0 ? rating.toFixed(1) : 'N/A'}
+              </div>
+              <div className="rating-details">
+                <span className="rating-badge" style={{ background: ratingColor }}>
+                  {rating > 0 ? `${rating.toFixed(1)}/5.0` : 'No ratings yet'}
+                </span>
+                <span className="rating-count">
+                  {washroom.total_reviews} {washroom.total_reviews === 1 ? 'review' : 'reviews'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Friends' Reviews Section */}
+          <div className="friends-reviews-section">
+            <h3>Friends' Reviews ({friendsReviews.length})</h3>
+            {friendsReviews.length > 0 ? (
+              <div className="reviews-list">
+                {friendsReviews.map((review) => {
+                  const reviewRating = getRating(review.overall_rating);
+                  const reviewColor = getRatingColor(reviewRating);
+                  return (
+                    <div key={review.id} className="friend-review-card">
+                      <div className="review-header">
+                        <div className="review-user">
+                          {review.avatar ? (
+                            <img src={review.avatar} alt={review.username} className="review-avatar" />
+                          ) : (
+                            <div className="review-avatar-placeholder">
+                              {review.username.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="review-username">{review.username}</span>
+                        </div>
+                        <div className="review-rating" style={{ color: reviewColor }}>
+                          {reviewRating > 0 ? reviewRating.toFixed(1) : 'N/A'}
+                        </div>
+                      </div>
+                      {review.comment && (
+                        <p className="review-comment">{review.comment}</p>
+                      )}
+                      <span className="review-date">
+                        {new Date(review.created_at).toLocaleDateString()}
+                      </span>
+                      
+                      {/* Like and Comment Section */}
+                      <div className="review-actions">
+                        <button
+                          className={`like-button ${likes[review.id]?.liked ? 'liked' : ''}`}
+                          onClick={() => handleLike(review.id)}
+                          disabled={loadingLikes.has(review.id)}
+                        >
+                          {likes[review.id]?.liked ? '❤️' : '🤍'} {likes[review.id]?.count || 0}
+                        </button>
+                        <button
+                          className="comment-button"
+                          onClick={() => toggleReviewExpanded(review.id)}
+                        >
+                          💬 {comments[review.id]?.length || 0}
+                        </button>
+                      </div>
+
+                      {/* Comments Section */}
+                      {expandedReviews.has(review.id) && (
+                        <div className="comments-section">
+                          {loadingComments.has(review.id) ? (
+                            <div className="loading-comments">Loading comments...</div>
+                          ) : (
+                            <>
+                              <div className="comments-list">
+                                {comments[review.id] && comments[review.id].length > 0 ? (
+                                  comments[review.id].map((comment) => (
+                                    <div key={comment.id} className="comment-item">
+                                      <div className="comment-user">
+                                        {comment.avatar ? (
+                                          <img src={comment.avatar} alt={comment.username} className="comment-avatar" />
+                                        ) : (
+                                          <div className="comment-avatar-placeholder">
+                                            {comment.username.charAt(0).toUpperCase()}
+                                          </div>
+                                        )}
+                                        <span className="comment-username">{comment.username}</span>
+                                      </div>
+                                      <p className="comment-text">{comment.comment_text}</p>
+                                      <span className="comment-time">{formatDate(comment.created_at)}</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <p className="no-comments">No comments yet. Be the first to comment!</p>
+                                )}
+                              </div>
+                              <div className="add-comment">
+                                <input
+                                  type="text"
+                                  placeholder="Write a comment..."
+                                  value={commentTexts[review.id] || ''}
+                                  onChange={(e) => setCommentTexts({ ...commentTexts, [review.id]: e.target.value })}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleAddComment(review.id);
+                                    }
+                                  }}
+                                  className="comment-input"
+                                />
+                                <button
+                                  onClick={() => handleAddComment(review.id)}
+                                  className="comment-submit"
+                                  disabled={!commentTexts[review.id]?.trim()}
+                                >
+                                  Post
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="no-friends-reviews">No friends have reviewed this washroom yet.</p>
+>>>>>>> 098c751d51aa836361af314dcc1b4f826a8c259e
             )}
           </div>
           <button

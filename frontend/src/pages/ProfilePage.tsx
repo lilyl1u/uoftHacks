@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { userService, reviewService, friendsService } from '../services/api';
 import FriendsList from '../components/FriendsList';
@@ -13,10 +13,14 @@ interface UserProfile {
   id: number;
   username: string;
   email?: string;
+  first_name?: string;
+  last_name?: string;
+  bio?: string;
   avatar: string | null;
   personality_type: string | null;
   badges: string[] | null;
   washrooms_visited: number;
+  friends_count?: number;
   washroom_visits?: Array<{
     id: number;
     name: string;
@@ -45,61 +49,63 @@ interface BadgeInfo {
   icon: string;
   color: string;
   description: string;
+  requirement: string;
   earned: boolean;
 }
 
-const getBadgeInfo = (badgeName: string): BadgeInfo | undefined => {
-  const badgeMap: Record<string, BadgeInfo> = {
-    'Explorer': {
+const getAllBadges = (): BadgeInfo[] => {
+  return [
+    {
+      name: 'Unlocked Your First Bathroom',
+      icon: '🎉',
+      color: '#FFD700',
+      description: 'You have visited your first bathroom and completed your first journey!',
+      requirement: 'Visit your first washroom',
+      earned: false // Will be determined dynamically
+    },
+    {
       name: 'Explorer',
       icon: '🗺️',
       color: '#FF6B6B',
       description: 'Visited 5+ washrooms',
-      earned: true
+      requirement: 'Visit 5 different washrooms',
+      earned: false
     },
-    'Frequent Visitor': {
+    {
       name: 'Frequent Visitor',
       icon: '⭐',
       color: '#4ECDC4',
       description: 'Visited 10+ washrooms',
-      earned: true
+      requirement: 'Visit 10 different washrooms',
+      earned: false
     },
-    'Early Bird': {
-      name: 'Early Bird',
-      icon: '🌅',
-      color: '#FFE66D',
-      description: 'Morning Pooper personality',
-      earned: true
-    },
-    'Night Owl': {
-      name: 'Night Owl',
-      icon: '🌙',
-      color: '#5F27CD',
-      description: 'Night Owl personality',
-      earned: true
-    },
-    'Reviewer': {
-      name: 'Reviewer',
-      icon: '💬',
-      color: '#00D2D3',
-      description: 'Left 5+ reviews',
-      earned: true
-    },
-    'Elite': {
+    {
       name: 'Elite',
       icon: '👑',
       color: '#FFD700',
       description: 'Visited 20+ washrooms',
-      earned: true
+      requirement: 'Visit 20 different washrooms',
+      earned: false
+    },
+    {
+      name: 'Reviewer',
+      icon: '💬',
+      color: '#00D2D3',
+      description: 'Left 5+ reviews',
+      requirement: 'Write 5 reviews',
+      earned: false
     }
-  };
-  return badgeMap[badgeName];
+  ];
+};
+
+const getBadgeInfo = (badgeName: string): BadgeInfo | undefined => {
+  const allBadges = getAllBadges();
+  return allBadges.find(b => b.name === badgeName);
 };
 
 const ProfilePage = () => {
   const { user } = useAuth();
   const { userId } = useParams<{ userId?: string }>();
-  const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [personality, setPersonality] = useState('');
@@ -108,7 +114,13 @@ const ProfilePage = () => {
   const [showWrappedModal, setShowWrappedModal] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<BadgeInfo | null>(null);
-  const [editData, setEditData] = useState({ username: '', email: '', avatar: '' });
+  const [editData, setEditData] = useState({ 
+    first_name: '', 
+    last_name: '', 
+    email: '', 
+    bio: '', 
+    avatar: '' 
+  });
   const [reviews, setReviews] = useState<Review[]>([]);
   const [wrappedData, setWrappedData] = useState<any>(null);
   const [isFriend, setIsFriend] = useState(false);
@@ -119,6 +131,14 @@ const ProfilePage = () => {
   const [selectedVisitData, setSelectedVisitData] = useState<{ visit_count: number; overall_rating?: number | string | null } | null>(null);
   const [showWashroomModal, setShowWashroomModal] = useState(false);
   const [visitsToShow, setVisitsToShow] = useState(7);
+  const [personalityDescription, setPersonalityDescription] = useState<string | null>(null);
+  const [generatingPersonality, setGeneratingPersonality] = useState(false);
+  const [hasAttemptedGeneration, setHasAttemptedGeneration] = useState(false);
+  const [showDoctorModal, setShowDoctorModal] = useState(false);
+  const [doctorAnalysis, setDoctorAnalysis] = useState<any>(null);
+  const [loadingDoctorAnalysis, setLoadingDoctorAnalysis] = useState(false);
+  const [doctorError, setDoctorError] = useState<string | null>(null);
+  const [friendsCount, setFriendsCount] = useState(0);
 
   const viewingUserId = userId ? parseInt(userId) : user?.id;
   const isOwnProfile = !userId || viewingUserId === user?.id;
@@ -140,13 +160,36 @@ const ProfilePage = () => {
   useEffect(() => {
     if (user && viewingUserId) {
       loadProfile();
+      loadFriendsCount();
       if (!isOwnProfile) {
         loadFriendshipStatus();
       }
       // Reset visits display when profile changes
       setVisitsToShow(7);
+      // Reset generation attempt flag when profile changes
+      setHasAttemptedGeneration(false);
     }
   }, [user, viewingUserId, isOwnProfile]);
+
+  useEffect(() => {
+    // Auto-generate personality for own profile if not set, or load description if set
+    if (profile && isOwnProfile && !hasAttemptedGeneration) {
+      if (!profile.personality_type) {
+        // Auto-generate if no personality exists
+        setHasAttemptedGeneration(true);
+        handleGeneratePersonality();
+      } else {
+        // Load description if personality exists
+        setHasAttemptedGeneration(true);
+        loadPersonalityDescription(profile.personality_type);
+      }
+    } else if (profile?.personality_type && !personalityDescription) {
+      // Load description for other users' profiles or if description not loaded yet
+      loadPersonalityDescription(profile.personality_type);
+    } else if (!profile?.personality_type) {
+      setPersonalityDescription(null);
+    }
+  }, [profile?.personality_type, profile, isOwnProfile, hasAttemptedGeneration]);
 
   const loadProfile = async () => {
     if (!user || !viewingUserId) return;
@@ -156,7 +199,13 @@ const ProfilePage = () => {
       setProfile(data);
       
       if (!data.isLimited) {
-        setEditData({ username: data.username, email: data.email || '', avatar: data.avatar || '' });
+        setEditData({ 
+          first_name: data.first_name || '', 
+          last_name: data.last_name || '', 
+          email: data.email || '', 
+          bio: data.bio || '', 
+          avatar: data.avatar || '' 
+        });
         setPersonality(data.personality_type || '');
         
         // Load user reviews only for full profiles
@@ -172,6 +221,17 @@ const ProfilePage = () => {
     }
   };
 
+  const loadFriendsCount = async () => {
+    if (!viewingUserId) return;
+    try {
+      const friends = await friendsService.getFriends(viewingUserId);
+      setFriendsCount(friends?.length || 0);
+    } catch (error) {
+      console.error('Failed to load friends count:', error);
+      setFriendsCount(0);
+    }
+  };
+
   const loadFriendshipStatus = async () => {
     if (!user || !viewingUserId || isOwnProfile) return;
     try {
@@ -182,6 +242,73 @@ const ProfilePage = () => {
       console.error('Failed to load friendship status:', error);
     } finally {
       setFriendshipLoading(false);
+    }
+  };
+
+  const loadPersonalityDescription = async (personalityType: string) => {
+    try {
+      const data = await userService.getPersonalityDescription(personalityType);
+      setPersonalityDescription(data.description);
+    } catch (error) {
+      console.error('Failed to load personality description:', error);
+    }
+  };
+
+  const handleGeneratePersonality = async () => {
+    if (!user || !viewingUserId) return;
+    try {
+      setGeneratingPersonality(true);
+      const data = await userService.generatePersonality(viewingUserId);
+      setPersonalityDescription(data.description);
+      // Reload profile to get updated personality_type
+      await loadProfile();
+    } catch (error: any) {
+      console.error('Failed to generate personality:', error);
+      alert(error.response?.data?.error || 'Failed to generate personality. Please try again.');
+    } finally {
+      setGeneratingPersonality(false);
+    }
+  };
+
+  const loadDoctorAnalysis = async () => {
+    if (!user || !isOwnProfile) return;
+    try {
+      setLoadingDoctorAnalysis(true);
+      setDoctorError(null);
+      const data = await userService.getBowelHealthAnalysis(user.id);
+      setDoctorAnalysis(data);
+      setShowDoctorModal(true);
+    } catch (err: any) {
+      console.error('Failed to load health analysis:', err);
+      setDoctorError(err.response?.data?.error || 'Failed to load health analysis. Please try again.');
+    } finally {
+      setLoadingDoctorAnalysis(false);
+    }
+  };
+
+  const getRegularityColor = (regularity: string) => {
+    switch (regularity) {
+      case 'regular':
+        return '#2ECC71';
+      case 'irregular':
+        return '#F39C12';
+      case 'needs_attention':
+        return '#E74C3C';
+      default:
+        return '#95a5a6';
+    }
+  };
+
+  const getRegularityLabel = (regularity: string) => {
+    switch (regularity) {
+      case 'regular':
+        return 'Regular';
+      case 'irregular':
+        return 'Irregular';
+      case 'needs_attention':
+        return 'Needs Attention';
+      default:
+        return 'Unknown';
     }
   };
 
@@ -230,14 +357,16 @@ const ProfilePage = () => {
     if (!user) return;
     try {
       await userService.updateProfile(user.id, {
-        username: editData.username,
-        email: editData.email,
+        first_name: editData.first_name,
+        last_name: editData.last_name,
+        bio: editData.bio,
         avatar: editData.avatar
       });
       setProfile((prev) => prev ? {
         ...prev,
-        username: editData.username,
-        email: editData.email,
+        first_name: editData.first_name,
+        last_name: editData.last_name,
+        bio: editData.bio,
         avatar: editData.avatar
       } : null);
       setShowEditModal(false);
@@ -347,7 +476,9 @@ const ProfilePage = () => {
               <img src={profile.avatar} alt="Avatar" />
             ) : (
               <div className="avatar-placeholder-large">
-                {profile.username.charAt(0).toUpperCase()}
+                {((profile.first_name && profile.first_name.charAt(0)) || 
+                  (profile.last_name && profile.last_name.charAt(0)) || 
+                  profile.username.charAt(0)).toUpperCase()}
               </div>
             )}
           </div>
@@ -361,17 +492,15 @@ const ProfilePage = () => {
           )}
         </div>
         <div className="user-info-right">
-          <div className="user-info-row">
-            <div className="user-info-item">
-              <span className="user-info-label">Name:</span>
-              <span className="user-info-value">{profile.username}</span>
-            </div>
-          </div>
-          <div className="user-info-row">
-            <div className="user-info-item">
-              <span className="user-info-label">Email:</span>
-              <span className="user-info-value">{profile.email || 'Not set'}</span>
-            </div>
+          <h2 className="profile-name">
+            {(profile.first_name || profile.last_name) 
+              ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+              : profile.username}
+          </h2>
+          <div className="bio-box">
+            <p className="bio-text">
+              {profile.bio || 'Enter bio'}
+            </p>
           </div>
         </div>
         <div className="user-info-buttons">
@@ -403,13 +532,12 @@ const ProfilePage = () => {
             onClick={() => setShowFriendsModal(true)}
             className="friends-button"
           >
-            Friends
+            {friendsCount} friends
           </button>
           {isOwnProfile && (
             <button
               onClick={() => setShowUserSearch(true)}
               className="friends-button"
-              style={{ marginLeft: '0.5rem' }}
             >
               Search Users
             </button>
@@ -420,7 +548,7 @@ const ProfilePage = () => {
               className="wrapped-text-button"
               title="View Your Year in Washrooms"
             >
-              pooPals Wrapped
+              View Your Wrapped
             </button>
           )}
         </div>
@@ -431,62 +559,138 @@ const ProfilePage = () => {
         <div className="personality-content">
           <span className="personality-label">Personality:</span>
           <span className="personality-display">
-            {profile.personality_type || 'Not set'}
+            {generatingPersonality ? 'Analyzing...' : (profile.personality_type || 'Analyzing...')}
           </span>
         </div>
       </div>
 
-      {/* Washrooms Visited & Badges Section */}
-      <div className="badges-and-wrapped-container">
-        <div className="washrooms-visited-section">
-          <h2 className="washrooms-visited-header">Washrooms Visited</h2>
-          <div className="washrooms-visited-count">{profile.washrooms_visited}</div>
+      {/* Washrooms Visited & Badges Section - Separate, aligned at top */}
+      <div className="washrooms-badges-container">
+        <div className="left-column">
+          <div className="washrooms-visited-section">
+            <h2 className="washrooms-visited-header">Washrooms Visited</h2>
+            <div className="washrooms-visited-count">{profile.washrooms_visited}</div>
+          </div>
+
+          {/* Doctor Section - Only show on own profile, positioned below washrooms visited */}
+          {isOwnProfile && (
+            <div className="doctor-section-card">
+              <h2 className="doctor-section-header">🩺 Health Analysis</h2>
+              <button 
+                onClick={loadDoctorAnalysis}
+                disabled={loadingDoctorAnalysis}
+                className="doctor-section-button"
+              >
+                {loadingDoctorAnalysis ? 'Analyzing...' : 'View Analysis'}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="badges-section">
-          <h2 className="badges-header">Badges ({(profile.badges?.length || 0) + (profile.washrooms_visited >= 1 ? 1 : 0)})</h2>
+          <h2 className="badges-header">Badges</h2>
           <div className="badges-row">
-            {profile.washrooms_visited >= 1 && (
-              <div 
-                className="achievement-badge" 
-                title="Unlocked your first bathroom"
-                onClick={() => setSelectedBadge({
-                  name: 'Unlocked Your First Bathroom',
-                  icon: '🎉',
-                  color: '#FFD700',
-                  description: 'You have visited your first bathroom and completed your first journey!',
-                  earned: true
-                })}
-              >
-                <div className="achievement-icon">🎉</div>
-              </div>
-            )}
-            {profile.badges && profile.badges.length > 0 ? (
-              profile.badges.map((badge, idx) => {
-                const badgeInfo = getBadgeInfo(badge);
+            {isOwnProfile ? (
+              // Show all badges (earned and locked) for own profile
+              getAllBadges().map((badge, idx) => {
+                // Determine if badge is earned
+                let earned = false;
+                const earnedBadges = profile.badges || [];
+                
+                if (badge.name === 'Unlocked Your First Bathroom') {
+                  earned = profile.washrooms_visited >= 1;
+                } else if (badge.name === 'Explorer') {
+                  earned = profile.washrooms_visited >= 5 || earnedBadges.includes('Explorer');
+                } else if (badge.name === 'Frequent Visitor') {
+                  earned = profile.washrooms_visited >= 10 || earnedBadges.includes('Frequent Visitor');
+                } else if (badge.name === 'Elite') {
+                  earned = profile.washrooms_visited >= 20 || earnedBadges.includes('Elite');
+                } else if (badge.name === 'Reviewer') {
+                  earned = reviews.length >= 5 || earnedBadges.includes('Reviewer');
+                } else {
+                  earned = earnedBadges.includes(badge.name);
+                }
+
+                const badgeWithEarned = { ...badge, earned };
+
+                if (badge.name === 'Unlocked Your First Bathroom') {
+                  return (
+                    <div 
+                      key={idx}
+                      className={`achievement-badge ${!earned ? 'locked' : ''}`}
+                      title={earned ? badge.name : `Locked: ${badge.requirement}`}
+                      onClick={() => setSelectedBadge(badgeWithEarned)}
+                    >
+                      <div className={`achievement-icon ${!earned ? 'locked-icon' : ''}`}>
+                        {badge.icon}
+                        {!earned && <span className="lock-overlay">🔒</span>}
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div 
                     key={idx} 
-                    className="badge-medal" 
-                    title={badgeInfo?.name}
-                    onClick={() => setSelectedBadge(badgeInfo || null)}
+                    className={`badge-medal ${!earned ? 'locked' : ''}`}
+                    title={earned ? badge.name : `Locked: ${badge.requirement}`}
+                    onClick={() => setSelectedBadge(badgeWithEarned)}
                   >
-                    {badgeInfo?.icon}
+                    {badge.icon}
+                    {!earned && <span className="lock-overlay">🔒</span>}
                   </div>
                 );
               })
             ) : (
-              profile.washrooms_visited < 1 && <p className="no-badges-text">Keep visiting washrooms to earn badges!</p>
+              // Show only earned badges for other profiles
+              <>
+                {profile.washrooms_visited >= 1 && (
+                  <div 
+                    className="achievement-badge" 
+                    title="Unlocked your first bathroom"
+                    onClick={() => setSelectedBadge({
+                      name: 'Unlocked Your First Bathroom',
+                      icon: '🎉',
+                      color: '#FFD700',
+                      description: 'You have visited your first bathroom and completed your first journey!',
+                      requirement: 'Visit your first washroom',
+                      earned: true
+                    })}
+                  >
+                    <div className="achievement-icon">🎉</div>
+                  </div>
+                )}
+                {profile.badges && profile.badges.length > 0 ? (
+                  profile.badges.map((badge, idx) => {
+                    const badgeInfo = getBadgeInfo(badge);
+                    if (badgeInfo) {
+                      const badgeWithEarned = { ...badgeInfo, earned: true };
+                      return (
+                        <div 
+                          key={idx} 
+                          className="badge-medal" 
+                          title={badgeInfo.name}
+                          onClick={() => setSelectedBadge(badgeWithEarned)}
+                        >
+                          {badgeInfo.icon}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })
+                ) : (
+                  profile.washrooms_visited < 1 && <p className="no-badges-text">Keep visiting washrooms to earn badges!</p>
+                )}
+              </>
             )}
           </div>
         </div>
       </div>
 
-
       {/* Recent Visits & Champion Board Section (Side by Side) */}
       <div className="visits-champion-container">
         <div className="recent-visits-section">
-          <h2 className="recent-visits-header">Your Recent Visits</h2>
+          <h2 className="recent-visits-header">Recent Visits</h2>
           {profile.washroom_visits && profile.washroom_visits.length > 0 ? (
             <>
               <div className="visits-list">
@@ -522,7 +726,6 @@ const ProfilePage = () => {
                       )}
                     </div>
                     <div className="visit-stats">
-                      <span>You visited {visit.visit_count} {visit.visit_count === 1 ? 'time' : 'times'}</span>
                       <span className="visit-date">
                         {new Date(visit.last_visited).toLocaleDateString()}
                       </span>
@@ -564,7 +767,7 @@ const ProfilePage = () => {
               className="personality-select"
             >
               <option value="">Select personality...</option>
-              <option value="Heavy Shitter">Heavy Shitter</option>
+              <option value="Heavy Launcher">Heavy Launcher</option>
               <option value="Morning Pooper">Morning Pooper</option>
               <option value="Night Owl">Night Owl</option>
               <option value="Explorer">Explorer</option>
@@ -591,11 +794,20 @@ const ProfilePage = () => {
             <h2>Edit Profile</h2>
             <div className="edit-form">
               <div className="form-group">
-                <label>Username</label>
+                <label>First Name</label>
                 <input
                   type="text"
-                  value={editData.username}
-                  onChange={(e) => setEditData({ ...editData, username: e.target.value })}
+                  value={editData.first_name}
+                  onChange={(e) => setEditData({ ...editData, first_name: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Last Name</label>
+                <input
+                  type="text"
+                  value={editData.last_name}
+                  onChange={(e) => setEditData({ ...editData, last_name: e.target.value })}
                   className="form-input"
                 />
               </div>
@@ -603,9 +815,21 @@ const ProfilePage = () => {
                 <label>Email</label>
                 <input
                   type="email"
-                  value={editData.email}
-                  onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                  value={profile.username}  // Backend returns email in username field
+                  disabled
                   className="form-input"
+                  style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                  title="Email cannot be changed"
+                />
+              </div>
+              <div className="form-group">
+                <label>Bio</label>
+                <textarea
+                  value={editData.bio}
+                  onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
+                  className="form-input"
+                  rows={3}
+                  placeholder="Tell us about yourself..."
                 />
               </div>
               <div className="form-group">
@@ -693,6 +917,19 @@ const ProfilePage = () => {
               </div>
             )}
 
+            {profile.personality_type && (
+              <div className="wrapped-stat wrapped-stat-6">
+                <div className="wrapped-icon">🎭</div>
+                <h3>Your Personality</h3>
+                <p className="wrapped-value">{profile.personality_type}</p>
+                {personalityDescription && (
+                  <p className="wrapped-detail" style={{ marginTop: '0.75rem', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                    {personalityDescription}
+                  </p>
+                )}
+              </div>
+            )}
+
             <button
               onClick={() => setShowWrappedModal(false)}
               className="wrapped-close-button"
@@ -718,11 +955,26 @@ const ProfilePage = () => {
         <div className="modal-overlay" onClick={() => setSelectedBadge(null)}>
           <div className="badge-detail-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-badge-modal" onClick={() => setSelectedBadge(null)}>✕</button>
-            <div className="badge-detail-icon" style={{ fontSize: '4rem' }}>
+            <div className={`badge-detail-icon ${!selectedBadge.earned ? 'locked-icon' : ''}`} style={{ fontSize: '4rem' }}>
               {selectedBadge.icon}
+              {!selectedBadge.earned && <span className="lock-overlay-large">🔒</span>}
             </div>
-            <h2 className="badge-detail-name">{selectedBadge.name}</h2>
-            <p className="badge-detail-description">{selectedBadge.description}</p>
+            <h2 className="badge-detail-name">
+              {selectedBadge.name}
+              {!selectedBadge.earned && <span className="locked-badge-label"> (Locked)</span>}
+            </h2>
+            {selectedBadge.earned ? (
+              <p className="badge-detail-description">{selectedBadge.description}</p>
+            ) : (
+              <div>
+                <p className="badge-detail-description" style={{ color: '#7f8c8d', fontStyle: 'italic' }}>
+                  {selectedBadge.description}
+                </p>
+                <div className="badge-requirement">
+                  <strong>Requirement:</strong> {selectedBadge.requirement}
+                </div>
+              </div>
+            )}
             <button 
               className="badge-detail-close"
               onClick={() => setSelectedBadge(null)}
@@ -745,6 +997,85 @@ const ProfilePage = () => {
           washroomId={selectedWashroomId}
           visitData={isOwnProfile ? selectedVisitData : undefined}
         />
+      )}
+
+      {/* Doctor Modal */}
+      {showDoctorModal && (
+        <div className="modal-overlay" onClick={() => setShowDoctorModal(false)}>
+          <div className="doctor-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowDoctorModal(false)}>✕</button>
+            <h2>🩺 iPoo Doctor</h2>
+            <p className="doctor-modal-subtitle">Your personalized bowel health analysis</p>
+
+            {doctorError ? (
+              <div className="doctor-error">
+                <p>{doctorError}</p>
+                <button onClick={loadDoctorAnalysis} className="doctor-retry-button">
+                  Try Again
+                </button>
+              </div>
+            ) : doctorAnalysis ? (
+              <>
+                {/* Regularity Status */}
+                <div className="doctor-regularity-card">
+                  <div className="doctor-regularity-header">
+                    <h3>Regularity Status</h3>
+                    <span 
+                      className="doctor-regularity-badge"
+                      style={{ backgroundColor: getRegularityColor(doctorAnalysis.regularity) }}
+                    >
+                      {getRegularityLabel(doctorAnalysis.regularity)}
+                    </span>
+                  </div>
+                  <p className="doctor-regularity-analysis">{doctorAnalysis.analysis}</p>
+                </div>
+
+                {/* Statistics */}
+                <div className="doctor-statistics-grid">
+                  <div className="doctor-stat-card">
+                    <div className="doctor-stat-icon">📊</div>
+                    <div className="doctor-stat-label">Total Visits</div>
+                    <div className="doctor-stat-value">{doctorAnalysis.statistics.totalVisits}</div>
+                  </div>
+                  <div className="doctor-stat-card">
+                    <div className="doctor-stat-icon">📅</div>
+                    <div className="doctor-stat-label">Visits/Week</div>
+                    <div className="doctor-stat-value">{doctorAnalysis.statistics.visitsPerWeek}</div>
+                  </div>
+                  <div className="doctor-stat-card">
+                    <div className="doctor-stat-icon">⏱️</div>
+                    <div className="doctor-stat-label">Avg Between</div>
+                    <div className="doctor-stat-value">{doctorAnalysis.statistics.averageTimeBetweenVisits}h</div>
+                  </div>
+                  <div className="doctor-stat-card">
+                    <div className="doctor-stat-icon">📈</div>
+                    <div className="doctor-stat-label">Consistency</div>
+                    <div className="doctor-stat-value">{doctorAnalysis.statistics.consistencyScore}%</div>
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                <div className="doctor-recommendations-card">
+                  <h3>💡 Recommendations</h3>
+                  <ul className="doctor-recommendations-list">
+                    {doctorAnalysis.recommendations.map((rec: string, index: number) => (
+                      <li key={index} className="doctor-recommendation-item">
+                        <span className="doctor-recommendation-number">{index + 1}</span>
+                        <span className="doctor-recommendation-text">{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="doctor-disclaimer">
+                  ⚠️ This analysis is for informational purposes only and is not a substitute for professional medical advice.
+                </div>
+              </>
+            ) : (
+              <div className="doctor-loading">Analyzing your bowel movement patterns...</div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

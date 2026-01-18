@@ -1,0 +1,374 @@
+<<<<<<< HEAD
+=======
+.explore-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 8px #5D4037,
+    inset 0 0 0 12px #8D6E63,
+    inset 0 0 0 16px #5D4037;
+  border: 4px solid #3E2723;
+  min-height: calc(100vh - 200px);
+}
+
+.explore-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.explore-page-header h1 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 2rem;
+}
+
+.explore-back-button {
+  background: #7f8c8d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.explore-back-button:hover {
+  background: #5f6e6f;
+}
+
+.explore-page-content {
+  min-height: 400px;
+}
+
+.explore-loading,
+.explore-empty {
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #7f8c8d;
+}
+
+.explore-empty-icon {
+  font-size: 5rem;
+  margin-bottom: 1.5rem;
+}
+
+.explore-empty h3 {
+  margin: 1rem 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1.5rem;
+}
+
+.explore-empty p {
+  margin: 0.5rem 0 2rem 0;
+  color: #7f8c8d;
+  font-size: 1.1rem;
+}
+
+.explore-find-friends-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.explore-find-friends-btn:hover {
+  opacity: 0.9;
+}
+
+.explore-reviews-list {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+}
+
+.explore-review-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #e0e0e0;
+}
+
+.explore-review-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.explore-review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.explore-review-user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  flex: 1;
+}
+
+.explore-review-user:hover {
+  opacity: 0.8;
+}
+
+.explore-review-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.explore-review-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.explore-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.explore-review-user-info h4 {
+  margin: 0 0 0.25rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.explore-review-time {
+  font-size: 0.85rem;
+  color: #95a5a6;
+}
+
+.explore-review-rating {
+  background: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  color: #f39c12;
+  font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.explore-review-washroom {
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  padding: 0.75rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+  background: white;
+}
+
+.explore-review-washroom:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.explore-review-washroom h5 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.explore-washroom-location {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}
+
+.explore-review-comment {
+  margin: 1rem 0 0 0;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  color: #2c3e50;
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.6;
+  border-left: 3px solid #667eea;
+}
+
+.explore-review-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.explore-like-button,
+.explore-comment-button {
+  background: white;
+  border: 1px solid #e0e0e0;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.explore-like-button:hover,
+.explore-comment-button:hover {
+  background: #f0f0f0;
+  border-color: #667eea;
+}
+
+.explore-like-button.liked {
+  background: #ffe6e6;
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.explore-like-button:disabled,
+.explore-comment-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.explore-comments-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.explore-loading-comments {
+  text-align: center;
+  padding: 1rem;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.explore-comments-list {
+  margin-bottom: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.explore-comment-item {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border-left: 2px solid #667eea;
+}
+
+.explore-comment-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.explore-comment-avatar,
+.explore-comment-avatar-placeholder {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.explore-comment-avatar-placeholder {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.explore-comment-username {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #2c3e50;
+}
+
+.explore-comment-text {
+  margin: 0.5rem 0;
+  color: #555;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.explore-comment-time {
+  font-size: 0.75rem;
+  color: #95a5a6;
+}
+
+.explore-no-comments {
+  text-align: center;
+  padding: 1rem;
+  color: #95a5a6;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.explore-add-comment {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.explore-comment-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.explore-comment-input:focus {
+  border-color: #667eea;
+}
+
+.explore-comment-submit {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.explore-comment-submit:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.explore-comment-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+>>>>>>> 098c751d51aa836361af314dcc1b4f826a8c259e

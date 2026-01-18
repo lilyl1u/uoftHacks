@@ -5,6 +5,7 @@ import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
 import MapPage from './pages/MapPage';
 import ExplorePage from './pages/ExplorePage';
+import DoctorPage from './pages/DoctorPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
@@ -18,16 +19,34 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route
           path="/app"
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
+          element={<Layout />}
         >
-          <Route index element={<Navigate to="/app/map" replace />} />
           <Route path="map" element={<MapPage />} />
-          <Route path="profile/:userId?" element={<ProfilePage />} />
-          <Route path="explore" element={<ExplorePage />} />
+          <Route
+            path="profile/:userId?"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="explore"
+            element={
+              <ProtectedRoute>
+                <ExplorePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="doctor"
+            element={
+              <ProtectedRoute>
+                <DoctorPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route index element={<Navigate to="/app/map" replace />} />
         </Route>
       </Routes>
     </AuthProvider>

@@ -3,12 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import './Layout.css';
 
 const Layout = () => {
-  const { user, logout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/app/map');
   };
 
   return (
@@ -16,9 +16,10 @@ const Layout = () => {
       <nav className="navbar">
         <div className="nav-container">
           <Link to="/app/map" className="nav-logo">
-            🚽 pooPals
+            🚽 iPoo
           </Link>
           <div className="nav-links">
+<<<<<<< HEAD
             <Link to="/app/map" className="nav-link">
               Map
             </Link>
@@ -34,6 +35,31 @@ const Layout = () => {
             <button onClick={handleLogout} className="nav-button">
               Logout
             </button>
+=======
+            {isAuthenticated ? (
+              <>
+                <Link to="/app/map" className="nav-link">
+                  Map
+                </Link>
+                <Link to="/app/profile" className="nav-link">
+                  Profile
+                </Link>
+                <Link to="/app/explore" className="nav-link">
+                  Explore
+                </Link>
+                <button onClick={handleLogout} className="nav-button">
+                  Logout
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={() => navigate('/login')}
+                className="nav-button"
+              >
+                Log In
+              </button>
+            )}
+>>>>>>> 098c751d51aa836361af314dcc1b4f826a8c259e
           </div>
         </div>
       </nav>

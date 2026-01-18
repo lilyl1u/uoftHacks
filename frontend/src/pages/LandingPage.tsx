@@ -7,11 +7,7 @@ const LandingPage = () => {
   const { user } = useAuth();
 
   const handleMapClick = () => {
-    if (user) {
-      navigate('/app/map');
-    } else {
-      navigate('/login');
-    }
+    navigate('/app/map');
   };
 
   const handleLoginClick = () => {
@@ -25,7 +21,7 @@ const LandingPage = () => {
       </button>
 
       <div className="landing-content">
-        <h1 className="landing-title">pooPals</h1>
+        <h1 className="landing-title">iPoo</h1>
 
         <div className="bathroom-symbol">🚻</div>
 

@@ -34,7 +34,7 @@ const seedData = async () => {
       { username: 'charlie_pooper', personality: 'Morning Pooper' },
       { username: 'diana_finder', personality: 'Night Owl' },
       { username: 'eve_explorer', personality: 'Explorer' },
-      { username: 'frank_visitor', personality: 'Heavy Shitter' },
+      { username: 'frank_visitor', personality: 'Heavy Launcher' },
       { username: 'grace_mapper', personality: 'Regular Reporter' },
       { username: 'henry_rated', personality: 'Morning Pooper' },
       { username: 'ivy_student', personality: 'Night Owl' },

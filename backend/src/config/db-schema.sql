@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS washrooms (
   latitude DECIMAL(10, 8) NOT NULL,
   longitude DECIMAL(11, 8) NOT NULL,
   campus VARCHAR(100) DEFAULT 'UofT' CHECK (campus IN ('UofT', 'Waterloo')),
+  gender_type VARCHAR(50) CHECK (gender_type IN ('Men', 'Women', 'Gender Neutral')) DEFAULT 'Gender Neutral',
   average_rating DECIMAL(3, 2) DEFAULT 0,
   total_reviews INTEGER DEFAULT 0,
   accessibility BOOLEAN DEFAULT false,
