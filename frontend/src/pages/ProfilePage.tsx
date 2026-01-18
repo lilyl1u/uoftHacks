@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { userService, reviewService } from '../services/api';
+import { userService, reviewService, friendsService } from '../services/api';
+import FriendsList from '../components/FriendsList';
+import UserSearch from '../components/UserSearch';
+import ChampionBoard from '../components/ChampionBoard';
+import WashroomDetailsModal from '../components/WashroomDetailsModal';
+import RecentPosts from '../components/RecentPosts';
 import './ProfilePage.css';
 
 interface UserProfile {
@@ -11,21 +17,27 @@ interface UserProfile {
   personality_type: string | null;
   badges: string[] | null;
   washrooms_visited: number;
-  washroom_visits: Array<{
+  washroom_visits?: Array<{
     id: number;
     name: string;
     building: string;
     visit_count: number;
     last_visited: string;
+    overall_rating?: number | string | null;
   }>;
+  isLimited?: boolean;
+  isOwnProfile?: boolean;
+  message?: string;
 }
 
 interface Review {
   id: number;
-  rating: number;
-  comment: string;
   washroom_id: number;
+  overall_rating: number | string;
+  comment: string;
   created_at: string;
+  washroom_name?: string;
+  building?: string;
 }
 
 interface BadgeInfo {
@@ -86,37 +98,120 @@ const getBadgeInfo = (badgeName: string): BadgeInfo | undefined => {
 
 const ProfilePage = () => {
   const { user } = useAuth();
+  const { userId } = useParams<{ userId?: string }>();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [personality, setPersonality] = useState('');
   const [showPersonalityModal, setShowPersonalityModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showWrappedModal, setShowWrappedModal] = useState(false);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<BadgeInfo | null>(null);
   const [editData, setEditData] = useState({ username: '', email: '', avatar: '' });
   const [reviews, setReviews] = useState<Review[]>([]);
   const [wrappedData, setWrappedData] = useState<any>(null);
+  const [isFriend, setIsFriend] = useState(false);
+  const [friendshipLoading, setFriendshipLoading] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [showUserSearch, setShowUserSearch] = useState(false);
+  const [selectedWashroomId, setSelectedWashroomId] = useState<number | null>(null);
+  const [selectedVisitData, setSelectedVisitData] = useState<{ visit_count: number; overall_rating?: number | string | null } | null>(null);
+  const [showWashroomModal, setShowWashroomModal] = useState(false);
+  const [visitsToShow, setVisitsToShow] = useState(7);
+
+  const viewingUserId = userId ? parseInt(userId) : user?.id;
+  const isOwnProfile = !userId || viewingUserId === user?.id;
+
+  // Helper functions for rating
+  const getRating = (rating: any): number => {
+    if (rating == null || rating === '') return 0;
+    const num = typeof rating === 'string' ? parseFloat(rating) : Number(rating);
+    return isNaN(num) ? 0 : num;
+  };
+
+  const getRatingColor = (rating: number): string => {
+    if (rating >= 4.0) return '#2ECC71'; // Green
+    if (rating >= 2.5) return '#F39C12'; // Orange
+    if (rating > 0) return '#E74C3C'; // Red
+    return '#95a5a6'; // Gray
+  };
 
   useEffect(() => {
-    if (user) {
+    if (user && viewingUserId) {
       loadProfile();
+      if (!isOwnProfile) {
+        loadFriendshipStatus();
+      }
+      // Reset visits display when profile changes
+      setVisitsToShow(7);
     }
-  }, [user]);
+  }, [user, viewingUserId, isOwnProfile]);
 
   const loadProfile = async () => {
-    if (!user) return;
+    if (!user || !viewingUserId) return;
     try {
-      const data = await userService.getProfile(user.id);
+      setLoading(true);
+      const data = await userService.getProfile(viewingUserId);
       setProfile(data);
-      setEditData({ username: data.username, email: data.email || '', avatar: data.avatar || '' });
-      setPersonality(data.personality_type || '');
       
-      // Load user reviews
-      const reviewsData = await reviewService.getUserReviews(user.id);
-      setReviews(reviewsData || []);
+      if (!data.isLimited) {
+        setEditData({ username: data.username, email: data.email || '', avatar: data.avatar || '' });
+        setPersonality(data.personality_type || '');
+        
+        // Load user reviews only for full profiles
+        const reviewsData = await reviewService.getUserReviews(viewingUserId);
+        setReviews(reviewsData?.reviews || []);
+      } else {
+        setReviews([]);
+      }
     } catch (error) {
       console.error('Failed to load profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadFriendshipStatus = async () => {
+    if (!user || !viewingUserId || isOwnProfile) return;
+    try {
+      setFriendshipLoading(true);
+      const status = await friendsService.getFriendshipStatus(viewingUserId);
+      setIsFriend(status.isFriend);
+    } catch (error) {
+      console.error('Failed to load friendship status:', error);
+    } finally {
+      setFriendshipLoading(false);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!user || !viewingUserId || isOwnProfile) return;
+    try {
+      setFollowLoading(true);
+      await friendsService.followUser(viewingUserId);
+      setIsFriend(true);
+      // Reload profile to get full data
+      await loadProfile();
+    } catch (error) {
+      console.error('Failed to follow user:', error);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleUnfollow = async () => {
+    if (!user || !viewingUserId || isOwnProfile) return;
+    try {
+      setFollowLoading(true);
+      await friendsService.unfollowUser(viewingUserId);
+      setIsFriend(false);
+      // Reload profile to get limited data
+      await loadProfile();
+    } catch (error) {
+      console.error('Failed to unfollow user:', error);
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -161,8 +256,8 @@ const ProfilePage = () => {
       : null;
 
     const avgRating = reviews.length > 0
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-      : 0;
+      ? (reviews.reduce((sum, r) => sum + getRating(r.overall_rating), 0) / reviews.length).toFixed(1)
+      : '0.0';
 
     setWrappedData({
       favoriteWashroom,
@@ -184,6 +279,64 @@ const ProfilePage = () => {
     return <div className="profile-container">Failed to load profile</div>;
   }
 
+  // Limited profile view (not friends and not own profile)
+  if (profile.isLimited) {
+    return (
+      <div className="profile-container">
+        <div className="user-info-section">
+          <div className="user-info-left">
+            <div className="profile-avatar-large">
+              {profile.avatar ? (
+                <img src={profile.avatar} alt="Avatar" />
+              ) : (
+                <div className="avatar-placeholder-large">
+                  {profile.username.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="user-info-right">
+            <div className="user-info-row">
+              <div className="user-info-item">
+                <span className="user-info-label">Name:</span>
+                <span className="user-info-value">{profile.username}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '2rem',
+          background: 'white',
+          borderRadius: '12px',
+          marginTop: '2rem',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <p style={{ fontSize: '1.1rem', color: '#7f8c8d', marginBottom: '1.5rem' }}>
+            {profile.message || 'Follow this user to see their full profile'}
+          </p>
+          <button
+            onClick={handleFollow}
+            disabled={followLoading}
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              padding: '0.75rem 2rem',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: followLoading ? 'not-allowed' : 'pointer',
+              opacity: followLoading ? 0.6 : 1
+            }}
+          >
+            {followLoading ? 'Following...' : 'Follow'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="profile-container">
       {/* User Info Section */}
@@ -198,6 +351,14 @@ const ProfilePage = () => {
               </div>
             )}
           </div>
+          {isOwnProfile && (
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="edit-profile-button-under-avatar"
+            >
+              Edit Profile
+            </button>
+          )}
         </div>
         <div className="user-info-right">
           <div className="user-info-row">
@@ -212,21 +373,56 @@ const ProfilePage = () => {
               <span className="user-info-value">{profile.email || 'Not set'}</span>
             </div>
           </div>
-          <div className="button-group">
+        </div>
+        <div className="user-info-buttons">
+          {!isOwnProfile && (
             <button
-              onClick={() => setShowEditModal(true)}
-              className="edit-profile-button"
+              onClick={isFriend ? handleUnfollow : handleFollow}
+              disabled={followLoading || friendshipLoading}
+              style={{
+                background: isFriend 
+                  ? '#e74c3c' 
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: (followLoading || friendshipLoading) ? 'not-allowed' : 'pointer',
+                opacity: (followLoading || friendshipLoading) ? 0.6 : 1,
+                marginRight: '1rem'
+              }}
             >
-              Edit Profile
+              {followLoading 
+                ? (isFriend ? 'Unfollowing...' : 'Following...') 
+                : (isFriend ? 'Unfollow' : 'Follow')}
             </button>
+          )}
+          <button
+            onClick={() => setShowFriendsModal(true)}
+            className="friends-button"
+          >
+            Friends
+          </button>
+          {isOwnProfile && (
+            <button
+              onClick={() => setShowUserSearch(true)}
+              className="friends-button"
+              style={{ marginLeft: '0.5rem' }}
+            >
+              Search Users
+            </button>
+          )}
+          {isOwnProfile && (
             <button
               onClick={generateWrappedData}
               className="wrapped-text-button"
               title="View Your Year in Washrooms"
             >
-              Washroom Finder Wrapped
+              pooPals Wrapped
             </button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -248,48 +444,115 @@ const ProfilePage = () => {
         </div>
 
         <div className="badges-section">
-          <h2 className="badges-header">Badges ({profile.badges?.length || 0})</h2>
+          <h2 className="badges-header">Badges ({(profile.badges?.length || 0) + (profile.washrooms_visited >= 1 ? 1 : 0)})</h2>
           <div className="badges-row">
+            {profile.washrooms_visited >= 1 && (
+              <div 
+                className="achievement-badge" 
+                title="Unlocked your first bathroom"
+                onClick={() => setSelectedBadge({
+                  name: 'Unlocked Your First Bathroom',
+                  icon: '🎉',
+                  color: '#FFD700',
+                  description: 'You have visited your first bathroom and completed your first journey!',
+                  earned: true
+                })}
+              >
+                <div className="achievement-icon">🎉</div>
+              </div>
+            )}
             {profile.badges && profile.badges.length > 0 ? (
               profile.badges.map((badge, idx) => {
                 const badgeInfo = getBadgeInfo(badge);
                 return (
-                  <div key={idx} className="badge-medal" title={badgeInfo?.name}>
+                  <div 
+                    key={idx} 
+                    className="badge-medal" 
+                    title={badgeInfo?.name}
+                    onClick={() => setSelectedBadge(badgeInfo || null)}
+                  >
                     {badgeInfo?.icon}
                   </div>
                 );
               })
             ) : (
-              <p className="no-badges-text">Keep visiting washrooms to earn badges!</p>
+              profile.washrooms_visited < 1 && <p className="no-badges-text">Keep visiting washrooms to earn badges!</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Recent Visits Section */}
-      <div className="recent-visits-section">
-        <h2 className="recent-visits-header">Recent Visits</h2>
-        {profile.washroom_visits && profile.washroom_visits.length > 0 ? (
-          <div className="visits-list">
-            {profile.washroom_visits.map((visit) => (
-              <div key={visit.id} className="visit-item">
-                <div>
-                  <h4>{visit.name}</h4>
-                  <p>{visit.building}</p>
-                </div>
-                <div className="visit-stats">
-                  <span>Visited {visit.visit_count} time(s)</span>
-                  <span className="visit-date">
-                    {new Date(visit.last_visited).toLocaleDateString()}
-                  </span>
-                </div>
+
+      {/* Recent Visits & Champion Board Section (Side by Side) */}
+      <div className="visits-champion-container">
+        <div className="recent-visits-section">
+          <h2 className="recent-visits-header">Your Recent Visits</h2>
+          {profile.washroom_visits && profile.washroom_visits.length > 0 ? (
+            <>
+              <div className="visits-list">
+                {profile.washroom_visits.slice(0, visitsToShow).map((visit) => (
+                  <div 
+                    key={visit.id} 
+                    className="visit-item"
+                    onClick={() => {
+                      setSelectedWashroomId(visit.id);
+                      setSelectedVisitData({
+                        visit_count: visit.visit_count,
+                        overall_rating: visit.overall_rating,
+                      });
+                      setShowWashroomModal(true);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div>
+                      <h4>{visit.name}</h4>
+                      <p>{visit.building}</p>
+                      {visit.overall_rating && (
+                        <div className="visit-rating">
+                          <span className="visit-rating-label">Your Rating:</span>
+                          <span 
+                            className="visit-rating-value"
+                            style={{ 
+                              color: getRatingColor(getRating(visit.overall_rating))
+                            }}
+                          >
+                            ⭐ {getRating(visit.overall_rating).toFixed(1)}/5.0
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="visit-stats">
+                      <span>You visited {visit.visit_count} {visit.visit_count === 1 ? 'time' : 'times'}</span>
+                      <span className="visit-date">
+                        {new Date(visit.last_visited).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="no-visits">No washroom visits yet</p>
-        )}
+              {profile.washroom_visits.length > visitsToShow && (
+                <button
+                  className="load-more-visits-button"
+                  onClick={() => setVisitsToShow(profile.washroom_visits!.length)}
+                >
+                  Load More ({profile.washroom_visits.length - visitsToShow} more)
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="no-visits">No washroom visits yet</p>
+          )}
+        </div>
+
+        <div className="champion-board-section">
+          <ChampionBoard />
+        </div>
       </div>
+
+      {/* Recent Posts Section */}
+      {!profile.isLimited && (
+        <RecentPosts userId={viewingUserId || user?.id || 0} />
+      )}
 
       {showPersonalityModal && (
         <div className="modal-overlay" onClick={() => setShowPersonalityModal(false)}>
@@ -438,6 +701,50 @@ const ProfilePage = () => {
             </button>
           </div>
         </div>
+      )}
+
+      <FriendsList 
+        userId={viewingUserId || user?.id || 0} 
+        isOpen={showFriendsModal} 
+        onClose={() => setShowFriendsModal(false)}
+      />
+
+      <UserSearch
+        isOpen={showUserSearch}
+        onClose={() => setShowUserSearch(false)}
+      />
+
+      {selectedBadge && (
+        <div className="modal-overlay" onClick={() => setSelectedBadge(null)}>
+          <div className="badge-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-badge-modal" onClick={() => setSelectedBadge(null)}>✕</button>
+            <div className="badge-detail-icon" style={{ fontSize: '4rem' }}>
+              {selectedBadge.icon}
+            </div>
+            <h2 className="badge-detail-name">{selectedBadge.name}</h2>
+            <p className="badge-detail-description">{selectedBadge.description}</p>
+            <button 
+              className="badge-detail-close"
+              onClick={() => setSelectedBadge(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Washroom Details Modal */}
+      {selectedWashroomId && (
+        <WashroomDetailsModal
+          isOpen={showWashroomModal}
+          onClose={() => {
+            setShowWashroomModal(false);
+            setSelectedWashroomId(null);
+            setSelectedVisitData(null);
+          }}
+          washroomId={selectedWashroomId}
+          visitData={isOwnProfile ? selectedVisitData : undefined}
+        />
       )}
     </div>
   );

@@ -8,6 +8,9 @@ import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import washroomRoutes from './routes/washrooms';
 import reviewRoutes from './routes/reviews';
+import friendsRoutes from './routes/friends';
+import commentRoutes from './routes/comments';
+import likeRoutes from './routes/likes';
 
 dotenv.config();
 
@@ -24,6 +27,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/washrooms', washroomRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/friends', friendsRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/likes', likeRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -26,8 +26,8 @@ function App() {
         >
           <Route index element={<Navigate to="/app/map" replace />} />
           <Route path="map" element={<MapPage />} />
+          <Route path="profile/:userId?" element={<ProfilePage />} />
           <Route path="explore" element={<ExplorePage />} />
-          <Route path="profile" element={<ProfilePage />} />
         </Route>
       </Routes>
     </AuthProvider>

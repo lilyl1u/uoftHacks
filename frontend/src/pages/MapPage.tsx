@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { washroomService } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import RatingModal from '../components/RatingModal';
 import AddWashroomModal from '../components/AddWashroomModal';
 import WashroomDetailsModal from '../components/WashroomDetailsModal';
@@ -48,13 +49,17 @@ interface Washroom {
   floor: number | null;
   latitude: number;
   longitude: number;
+  campus?: string;
   average_rating: number | string | null; // Can be string from DB
   total_reviews: number;
   accessibility: boolean;
   paid_access: boolean;
 }
 
+type Campus = 'UofT' | 'Waterloo';
+
 const MapPage = () => {
+  const { isAdmin } = useAuth();
   const [washrooms, setWashrooms] = useState<Washroom[]>([]);
   const [selectedWashroom, setSelectedWashroom] = useState<Washroom | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -62,6 +67,9 @@ const MapPage = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [buildingSearch, setBuildingSearch] = useState('');
+  const [selectedCampus, setSelectedCampus] = useState<Campus>('UofT');
 
   // Helper function to safely convert rating to number
   const getRating = (rating: any): number => {
@@ -73,22 +81,22 @@ const MapPage = () => {
   // Create custom washroom icon based on rating and accessibility
   const createWashroomIcon = (rating: number | string | null, isAccessible: boolean) => {
     const numRating = getRating(rating);
-    // Choose emoji/color based on rating
+    // Choose emoji/color based on rating (beli-style: green/orange/red)
     let emoji = '🚽'; // Default
-    let bgColor = '#4A90E2'; // Blue
+    let bgColor = '#95a5a6'; // Gray for no rating
     
+    // Color coding based on average rating
+    if (numRating >= 4.0) {
+      bgColor = '#2ECC71'; // Green for high rating (4.0+)
+    } else if (numRating >= 2.5) {
+      bgColor = '#F39C12'; // Orange for medium rating (2.5-3.9)
+    } else if (numRating > 0) {
+      bgColor = '#E74C3C'; // Red for low rating (< 2.5)
+    }
+    
+    // Accessible washrooms get a wheelchair icon but keep rating color
     if (isAccessible) {
       emoji = '♿';
-      bgColor = '#9B59B6'; // Purple for accessible
-    } else if (numRating >= 4.5) {
-      emoji = '🚽';
-      bgColor = '#2ECC71'; // Green for high rating
-    } else if (numRating >= 3.5) {
-      emoji = '🚽';
-      bgColor = '#F39C12'; // Orange for medium rating
-    } else if (numRating > 0) {
-      emoji = '🚽';
-      bgColor = '#E74C3C'; // Red for low rating
     }
 
     return new DivIcon({
@@ -118,11 +126,11 @@ const MapPage = () => {
 
   useEffect(() => {
     loadWashrooms();
-  }, []);
+  }, [selectedCampus]);
 
   const loadWashrooms = async () => {
     try {
-      const data = await washroomService.getAll();
+      const data = await washroomService.getAll(selectedCampus);
       const washroomsList = data.washrooms || [];
       console.log('Loaded washrooms:', washroomsList);
       console.log('Number of washrooms:', washroomsList.length);
@@ -183,8 +191,51 @@ const MapPage = () => {
   };
 
   const handleAddWashroom = async () => {
-    await loadWashrooms();
-    setShowAddModal(false);
+    try {
+      await loadWashrooms();
+      setShowAddModal(false);
+      setError(null);
+    } catch (err: any) {
+      if (err.response?.status === 403) {
+        setError('You do not have permission to add washrooms. Admin access required.');
+      } else {
+        setError('Failed to add washroom');
+      }
+    }
+  };
+
+  // Get map center based on campus
+  const getMapCenter = (): [number, number] => {
+    if (selectedCampus === 'Waterloo') {
+      return [43.4723, -80.5449]; // University of Waterloo coordinates
+    }
+    return [43.6629, -79.3957]; // UofT campus coordinates
+  };
+
+  // Filter washrooms by building search
+  const filteredWashrooms = washrooms.filter((washroom) => {
+    if (!buildingSearch.trim()) return true;
+    const searchLower = buildingSearch.toLowerCase().trim();
+    const building = washroom.building?.toLowerCase() || '';
+    return building.includes(searchLower);
+  });
+
+  const handleDeleteWashroom = async (washroomId: number) => {
+    if (!window.confirm('Are you sure you want to delete this washroom? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await washroomService.delete(washroomId);
+      await loadWashrooms();
+      setError(null);
+    } catch (err: any) {
+      if (err.response?.status === 403) {
+        setError('You do not have permission to delete washrooms. Admin access required.');
+      } else {
+        setError('Failed to delete washroom');
+      }
+    }
   };
 
   if (loading) {
@@ -199,11 +250,50 @@ const MapPage = () => {
     <ErrorBoundary>
       <div className="map-container">
       <div className="map-header">
-        <h1>UofT Washroom Map</h1>
-        <button onClick={() => setShowAddModal(true)} className="add-button">
-          + Add Washroom
-        </button>
+        <div className="map-header-left">
+          <h1>
+            <select 
+              value={selectedCampus} 
+              onChange={(e) => setSelectedCampus(e.target.value as Campus)}
+              className="campus-selector"
+            >
+              <option value="UofT">UofT Washroom Map</option>
+              <option value="Waterloo">Waterloo Washroom Map</option>
+            </select>
+          </h1>
+        </div>
+        {isAdmin() && (
+          <button onClick={() => setShowAddModal(true)} className="add-button">
+            + Add Washroom
+          </button>
+        )}
       </div>
+      {error && (
+        <div style={{
+          background: '#e74c3c',
+          color: 'white',
+          padding: '0.75rem 1rem',
+          borderRadius: '6px',
+          margin: '1rem',
+          textAlign: 'center'
+        }}>
+          {error}
+          <button 
+            onClick={() => setError(null)}
+            style={{
+              marginLeft: '1rem',
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              padding: '0.25rem 0.5rem',
+              borderRadius: '4px'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className="map-content">
         <div className="map-wrapper" style={{ position: 'relative' }}>
@@ -228,15 +318,15 @@ const MapPage = () => {
                 Click "+ Add Washroom" to add the first washroom to the map!
               </p>
               <p style={{ fontSize: '0.8rem', color: '#95a5a6' }}>
-                Map centered on UofT campus<br />
-                (43.6629, -79.3957)
+                Map centered on {selectedCampus === 'Waterloo' ? 'University of Waterloo' : 'UofT'} campus
               </p>
             </div>
           )}
           <MapContainer 
-            center={[43.6629, -79.3957]} // UofT campus coordinates
+            center={getMapCenter()}
             zoom={15} 
             style={{ height: '500px', width: '100%' }}
+            key={selectedCampus} // Force remount when campus changes
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -271,6 +361,21 @@ const MapPage = () => {
                     >
                       Rate This Washroom
                     </button>
+                    {isAdmin() && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteWashroom(washroom.id);
+                        }}
+                        className="popup-button"
+                        style={{
+                          background: '#e74c3c',
+                          marginTop: '0.5rem'
+                        }}
+                      >
+                        Delete Washroom
+                      </button>
+                    )}
                   </div>
                 </Popup>
               </Marker>
@@ -279,7 +384,29 @@ const MapPage = () => {
         </div>
 
         <div className="washrooms-list">
-          <h2>Washrooms ({washrooms.length})</h2>
+          <h2>
+            Washrooms ({filteredWashrooms.length}
+            {buildingSearch.trim() && filteredWashrooms.length !== washrooms.length && (
+              <span style={{ color: '#7f8c8d', fontSize: '0.9rem', fontWeight: 'normal' }}>
+                {' '}of {washrooms.length}
+              </span>
+            )})
+          </h2>
+          
+          {/* Building Search */}
+          <div className="washroom-search-container">
+            <input
+              type="text"
+              className="washroom-search-input"
+              placeholder="Search by building name..."
+              value={buildingSearch}
+              onChange={(e) => setBuildingSearch(e.target.value)}
+            />
+            <p className="washroom-search-hint">
+              💡 Search by building name (e.g., "Robarts", "Bahen", "Hart House")
+            </p>
+          </div>
+
           {!loading && washrooms.length === 0 ? (
             <div>
               <p className="no-washrooms">No washrooms found. Be the first to add one!</p>
@@ -287,17 +414,35 @@ const MapPage = () => {
                 Click the "+ Add Washroom" button to add a washroom to the map.
               </p>
             </div>
-          ) : washrooms.length > 0 ? (
+          ) : filteredWashrooms.length > 0 ? (
             <div className="washroom-cards">
-              {washrooms.map((washroom) => (
+              {filteredWashrooms.map((washroom) => {
+                const rating = getRating(washroom.average_rating);
+                let borderColor = '#95a5a6'; // Gray for no rating
+                if (rating >= 4.0) {
+                  borderColor = '#2ECC71'; // Green
+                } else if (rating >= 2.5) {
+                  borderColor = '#F39C12'; // Orange
+                } else if (rating > 0) {
+                  borderColor = '#E74C3C'; // Red
+                }
+                
+                return (
                 <div
                   key={washroom.id}
                   className="washroom-card"
+                  style={{ borderLeftColor: borderColor }}
                   onClick={() => handleWashroomClick(washroom)}
                 >
                   <div className="washroom-header">
                     <h3>{washroom.name}</h3>
-                    <div className="rating-badge">
+                    <div 
+                      className="rating-badge"
+                      style={{ 
+                        background: borderColor,
+                        color: 'white'
+                      }}
+                    >
                       ⭐ {getRating(washroom.average_rating).toFixed(1)} ({washroom.total_reviews})
                     </div>
                   </div>
@@ -316,7 +461,15 @@ const MapPage = () => {
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
+            </div>
+          ) : buildingSearch.trim() && washrooms.length > 0 ? (
+            <div className="no-search-results">
+              <p>No washrooms found in "{buildingSearch}"</p>
+              <p style={{ fontSize: '0.9rem', color: '#95a5a6', marginTop: '0.5rem' }}>
+                Try searching for a different building name
+              </p>
             </div>
           ) : null}
         </div>
@@ -348,6 +501,7 @@ const MapPage = () => {
         <AddWashroomModal
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddWashroom}
+          campus={selectedCampus}
         />
       )}
 

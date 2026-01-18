@@ -4,6 +4,12 @@ import { pool } from '../config/database';
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const viewerId = (req as any).user?.userId;
+    const profileUserId = parseInt(id);
+
+    if (!viewerId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     const result = await pool.query(
       `SELECT 
@@ -16,31 +22,58 @@ export const getUserProfile = async (req: Request, res: Response) => {
         created_at
       FROM users 
       WHERE id = $1`,
-      [id]
+      [profileUserId]
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Get washroom visits
+    const isOwnProfile = viewerId === profileUserId;
+
+    // Check if viewer and profile owner are friends (if not own profile)
+    let isFriend = false;
+    if (!isOwnProfile) {
+      const friendshipCheck = await pool.query(
+        'SELECT id FROM friends WHERE user_id = $1 AND friend_id = $2',
+        [viewerId, profileUserId]
+      );
+      isFriend = friendshipCheck.rows.length > 0;
+    }
+
+    // If not own profile and not friends, return limited profile
+    if (!isOwnProfile && !isFriend) {
+      return res.json({
+        id: result.rows[0].id,
+        username: result.rows[0].username,
+        avatar: result.rows[0].avatar,
+        isLimited: true,
+        message: 'Follow this user to see their full profile',
+      });
+    }
+
+    // Get washroom visits (only for full profile) with user's rating
     const visitsResult = await pool.query(
       `SELECT 
         w.id, 
         w.name, 
         w.building,
         uwv.visit_count,
-        uwv.last_visited
+        uwv.last_visited,
+        r.overall_rating
       FROM user_washroom_visits uwv
       JOIN washrooms w ON uwv.washroom_id = w.id
+      LEFT JOIN reviews r ON r.user_id = $1 AND r.washroom_id = w.id
       WHERE uwv.user_id = $1
       ORDER BY uwv.last_visited DESC`,
-      [id]
+      [profileUserId]
     );
 
     res.json({
       ...result.rows[0],
       washroom_visits: visitsResult.rows,
+      isLimited: false,
+      isOwnProfile,
     });
   } catch (error) {
     console.error('Get user profile error:', error);
@@ -114,6 +147,32 @@ export const getUserBadges = async (req: Request, res: Response) => {
     res.json({ badges: result.rows[0].badges || [] });
   } catch (error) {
     console.error('Get user badges error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getTopUsers = async (req: Request, res: Response) => {
+  try {
+    const { limit = 5 } = req.query;
+
+    const result = await pool.query(
+      `SELECT 
+        id,
+        username,
+        avatar,
+        personality_type,
+        washrooms_visited,
+        badges
+      FROM users
+      WHERE washrooms_visited > 0
+      ORDER BY washrooms_visited DESC, created_at ASC
+      LIMIT $1`,
+      [parseInt(limit as string)]
+    );
+
+    res.json({ users: result.rows });
+  } catch (error) {
+    console.error('Get top users error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

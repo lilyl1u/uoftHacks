@@ -3,22 +3,32 @@ import { pool } from '../config/database';
 
 export const getAllWashrooms = async (req: Request, res: Response) => {
   try {
-    const result = await pool.query(
-      `SELECT 
+    const { campus } = req.query;
+    
+    let query = `SELECT 
         id, 
         name, 
         building, 
         floor, 
         latitude, 
-        longitude, 
+        longitude,
+        campus,
         average_rating, 
         total_reviews,
         accessibility,
         paid_access,
         created_at
-      FROM washrooms 
-      ORDER BY average_rating DESC, total_reviews DESC`
-    );
+      FROM washrooms`;
+    
+    const params: any[] = [];
+    if (campus && (campus === 'UofT' || campus === 'Waterloo')) {
+      query += ` WHERE campus = $1`;
+      params.push(campus);
+    }
+    
+    query += ` ORDER BY average_rating DESC, total_reviews DESC`;
+
+    const result = await pool.query(query, params);
 
     res.json({ washrooms: result.rows });
   } catch (error) {
@@ -38,7 +48,8 @@ export const getWashroomById = async (req: Request, res: Response) => {
         building, 
         floor, 
         latitude, 
-        longitude, 
+        longitude,
+        campus,
         average_rating, 
         total_reviews,
         accessibility,
@@ -62,18 +73,20 @@ export const getWashroomById = async (req: Request, res: Response) => {
 
 export const createWashroom = async (req: Request, res: Response) => {
   try {
-    const { name, building, floor, latitude, longitude, accessibility, paid_access } = req.body;
+    const { name, building, floor, latitude, longitude, campus, accessibility, paid_access } = req.body;
 
     if (!name || !latitude || !longitude) {
       return res.status(400).json({ error: 'Name, latitude, and longitude are required' });
     }
 
+    const washroomCampus = campus && (campus === 'UofT' || campus === 'Waterloo') ? campus : 'UofT';
+
     const result = await pool.query(
       `INSERT INTO washrooms 
-      (name, building, floor, latitude, longitude, accessibility, paid_access) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      (name, building, floor, latitude, longitude, campus, accessibility, paid_access) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
       RETURNING *`,
-      [name, building || null, floor || null, latitude, longitude, accessibility || false, paid_access || false]
+      [name, building || null, floor || null, latitude, longitude, washroomCampus, accessibility || false, paid_access || false]
     );
 
     res.status(201).json({ message: 'Washroom created successfully', washroom: result.rows[0] });
@@ -143,6 +156,30 @@ export const updateWashroom = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteWashroom = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if washroom exists
+    const checkResult = await pool.query(
+      'SELECT id FROM washrooms WHERE id = $1',
+      [id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Washroom not found' });
+    }
+
+    // Delete washroom (CASCADE will automatically delete related reviews and visits)
+    await pool.query('DELETE FROM washrooms WHERE id = $1', [id]);
+
+    res.json({ message: 'Washroom deleted successfully' });
+  } catch (error) {
+    console.error('Delete washroom error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 export const getWashroomsByLocation = async (req: Request, res: Response) => {
   try {
     const { lat, lng, radius = 0.01 } = req.query; // radius in degrees (roughly 1km)
@@ -158,7 +195,8 @@ export const getWashroomsByLocation = async (req: Request, res: Response) => {
         building, 
         floor, 
         latitude, 
-        longitude, 
+        longitude,
+        campus,
         average_rating, 
         total_reviews,
         accessibility,
@@ -176,6 +214,39 @@ export const getWashroomsByLocation = async (req: Request, res: Response) => {
     res.json({ washrooms: result.rows });
   } catch (error) {
     console.error('Get washrooms by location error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getTopVisitedWashrooms = async (req: Request, res: Response) => {
+  try {
+    const { limit = 5 } = req.query;
+
+    const result = await pool.query(
+      `SELECT 
+        w.id,
+        w.name,
+        w.building,
+        w.floor,
+        w.latitude,
+        w.longitude,
+        w.campus,
+        w.average_rating,
+        w.total_reviews,
+        w.accessibility,
+        w.paid_access,
+        COALESCE(SUM(uwv.visit_count), 0) as total_visits
+      FROM washrooms w
+      LEFT JOIN user_washroom_visits uwv ON w.id = uwv.washroom_id
+      GROUP BY w.id
+      ORDER BY total_visits DESC, w.average_rating DESC
+      LIMIT $1`,
+      [parseInt(limit as string)]
+    );
+
+    res.json({ washrooms: result.rows });
+  } catch (error) {
+    console.error('Get top visited washrooms error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

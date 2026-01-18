@@ -4,6 +4,7 @@ import { authService } from '../services/api';
 interface User {
   id: number;
   username: string;
+  role?: string;
 }
 
 interface AuthContextType {
@@ -13,6 +14,8 @@ interface AuthContextType {
   signup: (username: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  hasPermission: (requiredRoles: string[]) => boolean;
+  isAdmin: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,6 +58,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem('user');
   };
 
+  const hasPermission = (requiredRoles: string[]): boolean => {
+    if (!user || !user.role) return false;
+    return requiredRoles.includes(user.role);
+  };
+
+  const isAdmin = (): boolean => {
+    return hasPermission(['admin']);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -64,6 +76,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         signup,
         logout,
         isAuthenticated: !!token,
+        hasPermission,
+        isAdmin,
       }}
     >
       {children}

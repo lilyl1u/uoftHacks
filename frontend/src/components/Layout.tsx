@@ -16,7 +16,7 @@ const Layout = () => {
       <nav className="navbar">
         <div className="nav-container">
           <Link to="/app/map" className="nav-logo">
-            🚽 UofT Washroom Finder
+            🚽 pooPals
           </Link>
           <div className="nav-links">
             <Link to="/app/map" className="nav-link">
@@ -28,7 +28,9 @@ const Layout = () => {
             <Link to="/app/profile" className="nav-link">
               Profile
             </Link>
-            <span className="nav-user">Welcome, {user?.username}</span>
+            <Link to="/app/explore" className="nav-link">
+              Explore
+            </Link>
             <button onClick={handleLogout} className="nav-button">
               Logout
             </button>

@@ -1,0 +1,214 @@
+.explore-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.explore-modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.explore-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.explore-modal-header h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.explore-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #7f8c8d;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.explore-close-btn:hover {
+  background: #f0f0f0;
+}
+
+.explore-loading,
+.explore-empty {
+  padding: 3rem;
+  text-align: center;
+  color: #7f8c8d;
+}
+
+.explore-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.explore-empty h3 {
+  margin: 1rem 0 0.5rem 0;
+  color: #2c3e50;
+}
+
+.explore-empty p {
+  margin: 0.5rem 0 1.5rem 0;
+  color: #7f8c8d;
+}
+
+.explore-find-friends-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.explore-find-friends-btn:hover {
+  opacity: 0.9;
+}
+
+.explore-reviews-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.explore-review-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.explore-review-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.explore-review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.explore-review-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  flex: 1;
+}
+
+.explore-review-user:hover {
+  opacity: 0.8;
+}
+
+.explore-review-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.explore-review-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.explore-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.explore-review-user-info h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.explore-review-time {
+  font-size: 0.8rem;
+  color: #95a5a6;
+}
+
+.explore-review-rating {
+  background: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+  color: #f39c12;
+  font-size: 0.9rem;
+}
+
+.explore-review-washroom {
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.explore-review-washroom:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.explore-review-washroom h5 {
+  margin: 0 0 0.25rem 0;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.explore-washroom-location {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}
+
+.explore-review-comment {
+  margin: 0.75rem 0 0 0;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 6px;
+  color: #2c3e50;
+  font-style: italic;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
