@@ -33,14 +33,14 @@ const LoginPage = () => {
         <form onSubmit={handleSubmit}>
           {error && <div className="error-message">{error}</div>}
           <div className="form-group">
-            <label htmlFor="username">University Username</label>
+            <label htmlFor="username">Username</label>
             <input
               type="text"
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              placeholder="e.g., jane.doe@mail.utoronto.ca"
+              placeholder="e.g., janeDoe"
             />
           </div>
           <div className="form-group">
