@@ -40,14 +40,17 @@ const RatingModal: React.FC<RatingModalProps> = ({
       await reviewService.create({
         washroom_id: washroom.id,
         cleanliness_rating: cleanliness,
+        privacy_rating: 3, // Default privacy rating since not in form
         wait_time_rating: waitTime,
         accessibility_rating: accessibility,
         comment: comment || null,
         toiletries_available: toiletries,
       });
       onSubmit();
+      onClose();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to submit review');
+      console.error('Review submission error:', err);
+      setError(err.response?.data?.error || err.message || 'Failed to submit review');
     } finally {
       setLoading(false);
     }

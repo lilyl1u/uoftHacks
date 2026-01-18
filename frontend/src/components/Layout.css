@@ -2,6 +2,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 .navbar {
@@ -50,18 +52,28 @@
 }
 
 .nav-button {
-  background-color: #e74c3c;
+  background: linear-gradient(135deg, #5D4037 0%, #6D4C41 100%);
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(93, 64, 55, 0.3);
+  letter-spacing: 0.3px;
 }
 
 .nav-button:hover {
-  background-color: #c0392b;
+  background: linear-gradient(135deg, #6D4C41 0%, #5D4037 100%);
+  box-shadow: 0 6px 16px rgba(93, 64, 55, 0.4);
+  transform: translateY(-2px);
+}
+
+.nav-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(93, 64, 55, 0.3);
 }
 
 .main-content {

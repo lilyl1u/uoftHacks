@@ -5,12 +5,53 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: "Outfit", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f5;
+  background: #E3F2FD;
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(255, 255, 255, 0.6) 39px,
+      rgba(255, 255, 255, 0.6) 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      rgba(255, 255, 255, 0.6) 39px,
+      rgba(255, 255, 255, 0.6) 40px
+    );
+  background-size: 40px 40px;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Washroom floor effect at bottom - only on map page */
+body.map-page-active::after {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: #D7CCC8;
+  background-image: 
+    /* Texture pattern */
+    radial-gradient(circle at 20% 30%, rgba(188, 170, 164, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(161, 136, 127, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(188, 170, 164, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 10% 80%, rgba(161, 136, 127, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 90% 20%, rgba(188, 170, 164, 0.1) 0%, transparent 50%);
+  background-size: 200px 200px, 180px 180px, 150px 150px, 220px 220px, 190px 190px;
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
 }
 
 code {

@@ -3,6 +3,15 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 8px #5D4037,
+    inset 0 0 0 12px #8D6E63,
+    inset 0 0 0 16px #5D4037;
+  border: 4px solid #3E2723;
+  min-height: calc(100vh - 200px);
 }
 
 .explore-page-header {

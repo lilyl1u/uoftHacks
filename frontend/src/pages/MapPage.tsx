@@ -125,6 +125,14 @@ const MapPage = () => {
     loadWashrooms();
   }, [selectedCampus]);
 
+  useEffect(() => {
+    // Add class to body to show footer on map page
+    document.body.classList.add('map-page-active');
+    return () => {
+      document.body.classList.remove('map-page-active');
+    };
+  }, []);
+
   const loadWashrooms = async () => {
     try {
       const data = await washroomService.getAll(selectedCampus);
@@ -386,9 +394,6 @@ const MapPage = () => {
               value={buildingSearch}
               onChange={(e) => setBuildingSearch(e.target.value)}
             />
-            <p className="washroom-search-hint">
-              💡 Search by building name (e.g., "Robarts", "Bahen", "Hart House")
-            </p>
           </div>
 
           {!loading && washrooms.length === 0 ? (

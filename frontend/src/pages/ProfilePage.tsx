@@ -45,55 +45,74 @@ interface BadgeInfo {
   icon: string;
   color: string;
   description: string;
+  requirement: string;
   earned: boolean;
 }
 
-const getBadgeInfo = (badgeName: string): BadgeInfo | undefined => {
-  const badgeMap: Record<string, BadgeInfo> = {
-    'Explorer': {
+const getAllBadges = (): BadgeInfo[] => {
+  return [
+    {
+      name: 'Unlocked Your First Bathroom',
+      icon: '🎉',
+      color: '#FFD700',
+      description: 'You have visited your first bathroom and completed your first journey!',
+      requirement: 'Visit your first washroom',
+      earned: false // Will be determined dynamically
+    },
+    {
       name: 'Explorer',
       icon: '🗺️',
       color: '#FF6B6B',
       description: 'Visited 5+ washrooms',
-      earned: true
+      requirement: 'Visit 5 different washrooms',
+      earned: false
     },
-    'Frequent Visitor': {
+    {
       name: 'Frequent Visitor',
       icon: '⭐',
       color: '#4ECDC4',
       description: 'Visited 10+ washrooms',
-      earned: true
+      requirement: 'Visit 10 different washrooms',
+      earned: false
     },
-    'Early Bird': {
-      name: 'Early Bird',
-      icon: '🌅',
-      color: '#FFE66D',
-      description: 'Morning Pooper personality',
-      earned: true
-    },
-    'Night Owl': {
-      name: 'Night Owl',
-      icon: '🌙',
-      color: '#5F27CD',
-      description: 'Night Owl personality',
-      earned: true
-    },
-    'Reviewer': {
-      name: 'Reviewer',
-      icon: '💬',
-      color: '#00D2D3',
-      description: 'Left 5+ reviews',
-      earned: true
-    },
-    'Elite': {
+    {
       name: 'Elite',
       icon: '👑',
       color: '#FFD700',
       description: 'Visited 20+ washrooms',
-      earned: true
+      requirement: 'Visit 20 different washrooms',
+      earned: false
+    },
+    {
+      name: 'Reviewer',
+      icon: '💬',
+      color: '#00D2D3',
+      description: 'Left 5+ reviews',
+      requirement: 'Write 5 reviews',
+      earned: false
+    },
+    {
+      name: 'Early Bird',
+      icon: '🌅',
+      color: '#FFE66D',
+      description: 'Morning Pooper personality',
+      requirement: 'Set your personality type to "Morning Pooper"',
+      earned: false
+    },
+    {
+      name: 'Night Owl',
+      icon: '🌙',
+      color: '#5F27CD',
+      description: 'Night Owl personality',
+      requirement: 'Set your personality type to "Night Owl"',
+      earned: false
     }
-  };
-  return badgeMap[badgeName];
+  ];
+};
+
+const getBadgeInfo = (badgeName: string): BadgeInfo | undefined => {
+  const allBadges = getAllBadges();
+  return allBadges.find(b => b.name === badgeName);
 };
 
 const ProfilePage = () => {
@@ -420,7 +439,7 @@ const ProfilePage = () => {
               className="wrapped-text-button"
               title="View Your Year in Washrooms"
             >
-              pooPals Wrapped
+              View Your Wrapped
             </button>
           )}
         </div>
@@ -446,37 +465,102 @@ const ProfilePage = () => {
         <div className="badges-section">
           <h2 className="badges-header">Badges ({(profile.badges?.length || 0) + (profile.washrooms_visited >= 1 ? 1 : 0)})</h2>
           <div className="badges-row">
-            {profile.washrooms_visited >= 1 && (
-              <div 
-                className="achievement-badge" 
-                title="Unlocked your first bathroom"
-                onClick={() => setSelectedBadge({
-                  name: 'Unlocked Your First Bathroom',
-                  icon: '🎉',
-                  color: '#FFD700',
-                  description: 'You have visited your first bathroom and completed your first journey!',
-                  earned: true
-                })}
-              >
-                <div className="achievement-icon">🎉</div>
-              </div>
-            )}
-            {profile.badges && profile.badges.length > 0 ? (
-              profile.badges.map((badge, idx) => {
-                const badgeInfo = getBadgeInfo(badge);
+            {isOwnProfile ? (
+              // Show all badges (earned and locked) for own profile
+              getAllBadges().map((badge, idx) => {
+                // Determine if badge is earned
+                let earned = false;
+                const earnedBadges = profile.badges || [];
+                
+                if (badge.name === 'Unlocked Your First Bathroom') {
+                  earned = profile.washrooms_visited >= 1;
+                } else if (badge.name === 'Explorer') {
+                  earned = profile.washrooms_visited >= 5 || earnedBadges.includes('Explorer');
+                } else if (badge.name === 'Frequent Visitor') {
+                  earned = profile.washrooms_visited >= 10 || earnedBadges.includes('Frequent Visitor');
+                } else if (badge.name === 'Elite') {
+                  earned = profile.washrooms_visited >= 20 || earnedBadges.includes('Elite');
+                } else if (badge.name === 'Reviewer') {
+                  earned = reviews.length >= 5 || earnedBadges.includes('Reviewer');
+                } else if (badge.name === 'Early Bird') {
+                  earned = profile.personality_type === 'Morning Pooper' || earnedBadges.includes('Early Bird');
+                } else if (badge.name === 'Night Owl') {
+                  earned = profile.personality_type === 'Night Owl' || earnedBadges.includes('Night Owl');
+                } else {
+                  earned = earnedBadges.includes(badge.name);
+                }
+
+                const badgeWithEarned = { ...badge, earned };
+
+                if (badge.name === 'Unlocked Your First Bathroom') {
+                  return (
+                    <div 
+                      key={idx}
+                      className={`achievement-badge ${!earned ? 'locked' : ''}`}
+                      title={earned ? badge.name : `Locked: ${badge.requirement}`}
+                      onClick={() => setSelectedBadge(badgeWithEarned)}
+                    >
+                      <div className={`achievement-icon ${!earned ? 'locked-icon' : ''}`}>
+                        {badge.icon}
+                        {!earned && <span className="lock-overlay">🔒</span>}
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div 
                     key={idx} 
-                    className="badge-medal" 
-                    title={badgeInfo?.name}
-                    onClick={() => setSelectedBadge(badgeInfo || null)}
+                    className={`badge-medal ${!earned ? 'locked' : ''}`}
+                    title={earned ? badge.name : `Locked: ${badge.requirement}`}
+                    onClick={() => setSelectedBadge(badgeWithEarned)}
                   >
-                    {badgeInfo?.icon}
+                    {badge.icon}
+                    {!earned && <span className="lock-overlay">🔒</span>}
                   </div>
                 );
               })
             ) : (
-              profile.washrooms_visited < 1 && <p className="no-badges-text">Keep visiting washrooms to earn badges!</p>
+              // Show only earned badges for other profiles
+              <>
+                {profile.washrooms_visited >= 1 && (
+                  <div 
+                    className="achievement-badge" 
+                    title="Unlocked your first bathroom"
+                    onClick={() => setSelectedBadge({
+                      name: 'Unlocked Your First Bathroom',
+                      icon: '🎉',
+                      color: '#FFD700',
+                      description: 'You have visited your first bathroom and completed your first journey!',
+                      requirement: 'Visit your first washroom',
+                      earned: true
+                    })}
+                  >
+                    <div className="achievement-icon">🎉</div>
+                  </div>
+                )}
+                {profile.badges && profile.badges.length > 0 ? (
+                  profile.badges.map((badge, idx) => {
+                    const badgeInfo = getBadgeInfo(badge);
+                    if (badgeInfo) {
+                      const badgeWithEarned = { ...badgeInfo, earned: true };
+                      return (
+                        <div 
+                          key={idx} 
+                          className="badge-medal" 
+                          title={badgeInfo.name}
+                          onClick={() => setSelectedBadge(badgeWithEarned)}
+                        >
+                          {badgeInfo.icon}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })
+                ) : (
+                  profile.washrooms_visited < 1 && <p className="no-badges-text">Keep visiting washrooms to earn badges!</p>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -486,7 +570,7 @@ const ProfilePage = () => {
       {/* Recent Visits & Champion Board Section (Side by Side) */}
       <div className="visits-champion-container">
         <div className="recent-visits-section">
-          <h2 className="recent-visits-header">Your Recent Visits</h2>
+          <h2 className="recent-visits-header">Recent Visits</h2>
           {profile.washroom_visits && profile.washroom_visits.length > 0 ? (
             <>
               <div className="visits-list">
@@ -718,11 +802,26 @@ const ProfilePage = () => {
         <div className="modal-overlay" onClick={() => setSelectedBadge(null)}>
           <div className="badge-detail-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-badge-modal" onClick={() => setSelectedBadge(null)}>✕</button>
-            <div className="badge-detail-icon" style={{ fontSize: '4rem' }}>
+            <div className={`badge-detail-icon ${!selectedBadge.earned ? 'locked-icon' : ''}`} style={{ fontSize: '4rem' }}>
               {selectedBadge.icon}
+              {!selectedBadge.earned && <span className="lock-overlay-large">🔒</span>}
             </div>
-            <h2 className="badge-detail-name">{selectedBadge.name}</h2>
-            <p className="badge-detail-description">{selectedBadge.description}</p>
+            <h2 className="badge-detail-name">
+              {selectedBadge.name}
+              {!selectedBadge.earned && <span className="locked-badge-label"> (Locked)</span>}
+            </h2>
+            {selectedBadge.earned ? (
+              <p className="badge-detail-description">{selectedBadge.description}</p>
+            ) : (
+              <div>
+                <p className="badge-detail-description" style={{ color: '#7f8c8d', fontStyle: 'italic' }}>
+                  {selectedBadge.description}
+                </p>
+                <div className="badge-requirement">
+                  <strong>Requirement:</strong> {selectedBadge.requirement}
+                </div>
+              </div>
+            )}
             <button 
               className="badge-detail-close"
               onClick={() => setSelectedBadge(null)}

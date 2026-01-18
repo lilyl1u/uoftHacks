@@ -16,7 +16,7 @@ const Layout = () => {
       <nav className="navbar">
         <div className="nav-container">
           <Link to="/app/map" className="nav-logo">
-            🚽 pooPals
+            🚽 iPoo
           </Link>
           <div className="nav-links">
             <Link to="/app/map" className="nav-link">
