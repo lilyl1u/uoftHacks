@@ -19,6 +19,9 @@ export const getUserProfile = async (req: Request, res: Response) => {
         personality_type, 
         badges, 
         washrooms_visited,
+        first_name,
+        last_name,
+        bio,
         created_at
       FROM users 
       WHERE id = $1`,
@@ -47,6 +50,9 @@ export const getUserProfile = async (req: Request, res: Response) => {
         id: result.rows[0].id,
         username: result.rows[0].username,
         avatar: result.rows[0].avatar,
+        first_name: result.rows[0].first_name,
+        last_name: result.rows[0].last_name,
+        bio: result.rows[0].bio,
         isLimited: true,
         message: 'Follow this user to see their full profile',
       });
@@ -84,7 +90,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
 export const updateUserProfile = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { avatar, personality_type, badges } = req.body;
+    const { avatar, personality_type, badges, first_name, last_name, bio, username, email } = req.body;
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -105,6 +111,31 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       values.push(badges);
     }
 
+    if (first_name !== undefined) {
+      updates.push(`first_name = $${paramCount++}`);
+      values.push(first_name === '' ? null : first_name);
+    }
+
+    if (last_name !== undefined) {
+      updates.push(`last_name = $${paramCount++}`);
+      values.push(last_name === '' ? null : last_name);
+    }
+
+    if (bio !== undefined) {
+      updates.push(`bio = $${paramCount++}`);
+      values.push(bio === '' ? null : bio);
+    }
+
+    if (username !== undefined) {
+      updates.push(`username = $${paramCount++}`);
+      values.push(username);
+    }
+
+    if (email !== undefined) {
+      updates.push(`email = $${paramCount++}`);
+      values.push(email);
+    }
+
     if (updates.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
@@ -116,7 +147,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       `UPDATE users 
       SET ${updates.join(', ')} 
       WHERE id = $${paramCount} 
-      RETURNING id, username, avatar, personality_type, badges`,
+      RETURNING id, username, avatar, personality_type, badges, first_name, last_name, bio`,
       values
     );
 
@@ -125,9 +156,18 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     }
 
     res.json({ message: 'Profile updated successfully', user: result.rows[0] });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update user profile error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
+    // Return detailed error in development, generic in production
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      code: process.env.NODE_ENV === 'development' ? error.code : undefined
+    });
   }
 };
 

@@ -356,22 +356,22 @@ const ProfilePage = () => {
   const handleEditProfile = async () => {
     if (!user) return;
     try {
-      await userService.updateProfile(user.id, {
-        first_name: editData.first_name,
-        last_name: editData.last_name,
-        bio: editData.bio,
-        avatar: editData.avatar
-      });
-      setProfile((prev) => prev ? {
-        ...prev,
-        first_name: editData.first_name,
-        last_name: editData.last_name,
-        bio: editData.bio,
-        avatar: editData.avatar
-      } : null);
+      const updateData: any = {};
+      
+      // Only include fields that are actually provided (not undefined)
+      if (editData.first_name !== undefined) updateData.first_name = editData.first_name || null;
+      if (editData.last_name !== undefined) updateData.last_name = editData.last_name || null;
+      if (editData.bio !== undefined) updateData.bio = editData.bio || null;
+      if (editData.avatar !== undefined) updateData.avatar = editData.avatar || null;
+      
+      await userService.updateProfile(user.id, updateData);
+      
+      // Reload profile to get updated data
+      await loadProfile();
       setShowEditModal(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update profile:', error);
+      alert(error.response?.data?.error || 'Failed to update profile. Please try again.');
     }
   };
 

@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
   personality_type VARCHAR(100),
   badges TEXT[], -- Array of badge names
   washrooms_visited INTEGER DEFAULT 0,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  bio TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
