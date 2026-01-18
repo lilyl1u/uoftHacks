@@ -282,12 +282,13 @@ const WashroomDetailsModal: React.FC<WashroomDetailsModalProps> = ({
             <h3>Location</h3>
             <div className="map-container-details">
               <MapContainer
+                key={`map-${washroomId}`}
                 center={[washroom.latitude, washroom.longitude]}
                 zoom={17}
                 style={{ height: '300px', width: '100%', borderRadius: '8px' }}
               >
                 <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{s}.png"
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
                 <Marker

@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { washroomService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import RatingModal from '../components/RatingModal';
+import ReviewsListModal from '../components/ReviewsListModal';
 import AddWashroomModal from '../components/AddWashroomModal';
 import './MapPage.css';
 
@@ -61,11 +62,13 @@ const MapPage = () => {
   const { isAdmin } = useAuth();
   const [washrooms, setWashrooms] = useState<Washroom[]>([]);
   const [selectedWashroom, setSelectedWashroom] = useState<Washroom | null>(null);
-  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showReviewsListModal, setShowReviewsListModal] = useState(false);
+  const [showAddReviewModal, setShowAddReviewModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [buildingSearch, setBuildingSearch] = useState('');
+  const [addReviewSearch, setAddReviewSearch] = useState('');
   const [selectedCampus, setSelectedCampus] = useState<Campus>('UofT');
 
   // Helper function to safely convert rating to number
@@ -173,12 +176,18 @@ const MapPage = () => {
 
   const handleWashroomClick = (washroom: Washroom) => {
     setSelectedWashroom(washroom);
-    setShowRatingModal(true);
+    setShowReviewsListModal(true);
+  };
+
+  const handleAddReviewClick = () => {
+    setSelectedWashroom(null);
+    setAddReviewSearch('');
+    setShowAddReviewModal(true);
   };
 
   const handleRatingSubmit = async () => {
     await loadWashrooms();
-    setShowRatingModal(false);
+    setShowAddReviewModal(false);
     setSelectedWashroom(null);
   };
 
@@ -210,6 +219,14 @@ const MapPage = () => {
     const searchLower = buildingSearch.toLowerCase().trim();
     const building = washroom.building?.toLowerCase() || '';
     return building.includes(searchLower);
+  });
+
+  const filteredWashroomsForReview = washrooms.filter((washroom) => {
+    if (!addReviewSearch.trim()) return true;
+    const searchLower = addReviewSearch.toLowerCase().trim();
+    const building = washroom.building?.toLowerCase() || '';
+    const name = washroom.name?.toLowerCase() || '';
+    return building.includes(searchLower) || name.includes(searchLower);
   });
 
   const handleDeleteWashroom = async (washroomId: number) => {
@@ -254,11 +271,16 @@ const MapPage = () => {
             </select>
           </h1>
         </div>
-        {isAdmin() && (
-          <button onClick={() => setShowAddModal(true)} className="add-button">
-            + Add Washroom
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button onClick={handleAddReviewClick} className="add-button" style={{ background: '#27ae60' }}>
+            + Add Review
           </button>
-        )}
+          {isAdmin() && (
+            <button onClick={() => setShowAddModal(true)} className="add-button">
+              + Add Washroom
+            </button>
+          )}
+        </div>
       </div>
       {error && (
         <div style={{
@@ -464,15 +486,101 @@ const MapPage = () => {
         </div>
       </div>
 
-      {showRatingModal && selectedWashroom && (
+      {showReviewsListModal && selectedWashroom && (
+        <ReviewsListModal
+          washroom={selectedWashroom}
+          onClose={() => {
+            setShowReviewsListModal(false);
+            setSelectedWashroom(null);
+          }}
+        />
+      )}
+
+      {showAddReviewModal && selectedWashroom && (
         <RatingModal
           washroom={selectedWashroom}
           onClose={() => {
-            setShowRatingModal(false);
+            setShowAddReviewModal(false);
             setSelectedWashroom(null);
           }}
           onSubmit={handleRatingSubmit}
         />
+      )}
+
+      {showAddReviewModal && !selectedWashroom && (
+        <div className="modal-overlay" onClick={() => setShowAddReviewModal(false)}>
+          <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Add a Review</h2>
+              <p>Select a washroom to review</p>
+            </div>
+
+            {/* Search Input */}
+            <div className="washroom-search-container" style={{ margin: '1rem' }}>
+              <input
+                type="text"
+                className="washroom-search-input"
+                placeholder="Search by building or washroom name..."
+                value={addReviewSearch}
+                onChange={(e) => setAddReviewSearch(e.target.value)}
+              />
+            </div>
+
+            <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '1rem' }}>
+              {washrooms.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#7f8c8d', padding: '2rem' }}>
+                  No washrooms available to review yet.
+                </p>
+              ) : filteredWashroomsForReview.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#7f8c8d', padding: '2rem' }}>
+                  No washrooms found matching "{addReviewSearch}". Try a different search.
+                </p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                  {filteredWashroomsForReview.map((washroom) => (
+                    <div
+                      key={washroom.id}
+                      onClick={() => setSelectedWashroom(washroom)}
+                      style={{
+                        padding: '1rem',
+                        border: '2px solid #e0e0e0',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        background: '#f8f9fa',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#3498db';
+                        e.currentTarget.style.background = '#ecf0f1';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = '#e0e0e0';
+                        e.currentTarget.style.background = '#f8f9fa';
+                      }}
+                    >
+                      <h3 style={{ margin: '0 0 0.5rem 0', color: '#2c3e50' }}>{washroom.name}</h3>
+                      {washroom.building && (
+                        <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#7f8c8d' }}>
+                          {washroom.building}
+                          {washroom.floor !== null && ` - Floor ${washroom.floor}`}
+                        </p>
+                      )}
+                      <div style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: '#95a5a6' }}>
+                        ⭐ {getRating(washroom.average_rating).toFixed(1)} ({washroom.total_reviews} reviews)
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-actions">
+              <button type="button" onClick={() => setShowAddReviewModal(false)} className="cancel-button">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showAddModal && (
